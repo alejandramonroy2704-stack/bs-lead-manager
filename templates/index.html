@@ -7,28 +7,18 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --orange: #e85d04;
-    --orange-dark: #c94e03;
-    --orange-light: #fff1e6;
-    --black: #111;
-    --gold: #c9a84c;
-    --bg: #f0f2f5;
-    --card: #fff;
-    --border: #e0e0e0;
-    --text: #1a1a1a;
-    --muted: #6b7280;
-    --green: #16a34a;
-    --red: #dc2626;
-    --blue: #2563eb;
-    --purple: #7c3aed;
-    --amber: #d97706;
-    --radius: 10px;
-    --shadow: 0 1px 4px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+    --orange: #e85d04; --orange-dark: #c94e03; --orange-light: #fff1e6;
+    --black: #111; --gold: #c9a84c;
+    --bg: #f0f2f5; --card: #fff; --border: #e0e0e0;
+    --text: #1a1a1a; --muted: #6b7280;
+    --green: #16a34a; --red: #dc2626; --blue: #2563eb;
+    --purple: #7c3aed; --amber: #d97706;
+    --radius: 10px; --shadow: 0 1px 4px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
   }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
          background: var(--bg); color: var(--text); min-height: 100vh; }
 
-  /* ── Header ── */
+  /* Header */
   header {
     background: var(--black); color: #fff; padding: 0 24px;
     display: flex; align-items: center; justify-content: space-between;
@@ -41,29 +31,27 @@
                justify-content: center; font-weight: 900; font-size: 18px; }
   .logo h1 { font-size: 18px; font-weight: 700; letter-spacing: -.3px; }
   .logo span { color: var(--orange); }
-  .header-right { display: flex; gap: 8px; }
 
-  /* ── Stats bar ── */
-  .stats-bar {
-    display: flex; gap: 12px; padding: 16px 24px; flex-wrap: wrap;
-  }
+  /* Stats bar */
+  .stats-bar { display: flex; gap: 10px; padding: 16px 24px; flex-wrap: wrap; }
   .stat-card {
     background: var(--card); border-radius: var(--radius);
-    padding: 14px 20px; flex: 1; min-width: 120px;
+    padding: 12px 16px; flex: 1; min-width: 100px;
     box-shadow: var(--shadow); border-left: 4px solid var(--orange);
     transition: transform .15s;
   }
   .stat-card:hover { transform: translateY(-2px); }
-  .stat-card.sent   { border-color: var(--green); }
-  .stat-card.pending { border-color: var(--amber); }
-  .stat-card.email  { border-color: var(--blue); }
-  .stat-card.weeks  { border-color: var(--purple); }
-  .stat-label { font-size: 11px; font-weight: 600; color: var(--muted);
+  .stat-card.s-pending    { border-color: var(--muted); }
+  .stat-card.s-contacted  { border-color: var(--orange); }
+  .stat-card.s-interested { border-color: var(--blue); }
+  .stat-card.s-meeting    { border-color: var(--purple); }
+  .stat-card.s-closed     { border-color: var(--green); }
+  .stat-card.s-email      { border-color: var(--gold); }
+  .stat-label { font-size: 10px; font-weight: 600; color: var(--muted);
                 text-transform: uppercase; letter-spacing: .6px; }
-  .stat-value { font-size: 28px; font-weight: 800; line-height: 1.1;
-                margin-top: 4px; }
+  .stat-value { font-size: 26px; font-weight: 800; line-height: 1.1; margin-top: 4px; }
 
-  /* ── Generate panel ── */
+  /* Generate panel */
   .generate-panel {
     margin: 0 24px 16px;
     background: var(--card); border-radius: var(--radius);
@@ -83,20 +71,15 @@
   .chevron.open { transform: rotate(180deg); }
   .panel-body { padding: 20px; display: none; }
   .panel-body.open { display: block; }
-
   .form-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
   .form-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 140px; }
   .form-group label { font-size: 12px; font-weight: 600; color: var(--muted);
                       text-transform: uppercase; letter-spacing: .5px; }
   .form-group select, .form-group input {
     padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 7px;
-    font-size: 14px; font-family: inherit; background: #fff;
-    transition: border-color .15s;
+    font-size: 14px; font-family: inherit; background: #fff; transition: border-color .15s;
   }
-  .form-group select:focus, .form-group input:focus {
-    outline: none; border-color: var(--orange);
-  }
-
+  .form-group select:focus, .form-group input:focus { outline: none; border-color: var(--orange); }
   .btn-generate {
     background: var(--orange); color: #fff; border: none;
     padding: 12px 28px; border-radius: 8px; font-size: 15px; font-weight: 700;
@@ -111,11 +94,54 @@
              border-radius: 50%; animation: spin .7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ── Toolbar ── */
-  .toolbar {
-    margin: 0 24px 16px;
-    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  /* Search bar */
+  .search-wrap { margin: 0 24px 14px; }
+  .search-bar {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--card); border-radius: var(--radius);
+    padding: 10px 16px; box-shadow: var(--shadow);
+    border: 1.5px solid var(--border); transition: border-color .2s;
   }
+  .search-bar:focus-within { border-color: var(--orange); }
+  .search-bar .search-icon { font-size: 16px; color: var(--muted); flex-shrink: 0; }
+  .search-bar input {
+    flex: 1; border: none; outline: none; font-size: 14px;
+    font-family: inherit; background: transparent; color: var(--text);
+  }
+  .search-bar input::placeholder { color: var(--muted); }
+  .search-clear {
+    background: none; border: none; cursor: pointer; color: var(--muted);
+    font-size: 20px; padding: 0; line-height: 1; display: none;
+  }
+  .search-clear:hover { color: var(--red); }
+  .search-clear.visible { display: block; }
+
+  /* Toolbar */
+  .toolbar { margin: 0 24px 16px; display: flex; align-items: flex-start;
+             justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .toolbar-left { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+
+  /* Pipeline filter */
+  .pipeline-filter { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pf-btn {
+    padding: 6px 13px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: 1.5px solid var(--border); background: #fff;
+    transition: all .15s; color: var(--muted); display: flex; align-items: center; gap: 4px;
+  }
+  .pf-btn:hover { opacity: .85; transform: translateY(-1px); }
+  .pf-btn .pf-count { background: var(--bg); padding: 1px 5px;
+                      border-radius: 10px; font-size: 10px; }
+  .pf-btn.active .pf-count { background: rgba(255,255,255,.25); }
+  .pf-btn.active { color: #fff; }
+  .pf-btn[data-s="all"].active       { background: var(--black); border-color: var(--black); }
+  .pf-btn[data-s="pending"].active   { background: var(--muted); border-color: var(--muted); }
+  .pf-btn[data-s="contacted"].active { background: var(--orange); border-color: var(--orange); }
+  .pf-btn[data-s="interested"].active{ background: var(--blue); border-color: var(--blue); }
+  .pf-btn[data-s="meeting"].active   { background: var(--purple); border-color: var(--purple); }
+  .pf-btn[data-s="closed"].active    { background: var(--green); border-color: var(--green); }
+  .pf-btn[data-s="lost"].active      { background: var(--red); border-color: var(--red); }
+
+  /* Category tabs */
   .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
   .tab {
     padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;
@@ -128,6 +154,7 @@
                     border-radius: 10px; font-size: 11px; margin-left: 4px; }
   .tab:not(.active) .tab-count { background: var(--bg); color: var(--muted); }
 
+  /* Export buttons */
   .export-bar { display: flex; gap: 8px; flex-wrap: wrap; }
   .btn-export {
     padding: 7px 14px; border-radius: 7px; font-size: 13px; font-weight: 600;
@@ -140,14 +167,13 @@
   .btn-export.csv   { color: var(--muted); border-color: var(--border); background: #fff; }
   .btn-export.csv:hover   { background: var(--muted); color: #fff; }
 
-  /* ── Lead cards grid ── */
+  /* Lead cards */
   .leads-section { padding: 0 24px; }
   .leads-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 16px; margin-bottom: 16px;
   }
-
   .lead-card {
     background: var(--card); border-radius: var(--radius);
     box-shadow: var(--shadow); overflow: hidden;
@@ -155,14 +181,14 @@
     border: 1.5px solid var(--border);
   }
   .lead-card:hover { transform: translateY(-3px); box-shadow: 0 6px 24px rgba(0,0,0,.1); }
-  .lead-card.is-sent { opacity: .55; }
+  .lead-card.is-closed { opacity: .6; }
 
   .card-top {
-    padding: 14px 16px 10px;
+    padding: 12px 16px 10px;
     border-bottom: 1px solid var(--border);
-    display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
   }
-  .card-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+  .card-badges { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
   .badge {
     font-size: 10px; font-weight: 700; padding: 3px 8px;
     border-radius: 12px; text-transform: uppercase; letter-spacing: .5px;
@@ -176,68 +202,70 @@
   .badge-catering   { background: #f0fdf4; color: #15803d; }
   .badge-foodtruck  { background: #fffbeb; color: #b45309; }
 
-  .card-body { padding: 14px 16px; }
+  /* Status select */
+  .status-select {
+    border: 1.5px solid var(--border); border-radius: 7px;
+    padding: 5px 8px; font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: inherit; background: #fff;
+    transition: border-color .15s; color: var(--muted); flex-shrink: 0;
+  }
+  .status-select:focus { outline: none; }
+
+  .card-body { padding: 12px 16px; }
   .biz-name { font-size: 16px; font-weight: 800; line-height: 1.2;
               margin-bottom: 10px; color: var(--black); }
-  .biz-name.sent-name { text-decoration: line-through; color: var(--muted); }
-
   .contact-row { display: flex; align-items: flex-start; gap: 8px;
                  font-size: 13px; margin-bottom: 6px; color: var(--text); }
   .contact-row .ci { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
   .contact-row a { color: var(--orange); text-decoration: none; }
   .contact-row a:hover { text-decoration: underline; }
-
   .reason-text {
     font-size: 12px; color: var(--muted); font-style: italic;
     background: var(--bg); padding: 8px 10px; border-radius: 6px;
     margin-top: 10px; line-height: 1.5;
   }
 
-  .card-actions {
-    padding: 10px 16px 14px;
-    display: flex; gap: 8px;
+  /* Notes section */
+  .notes-section {
+    border-top: 1px solid var(--border); padding: 10px 16px;
   }
-  .btn-sent, .btn-unsent, .btn-delete {
-    flex: 1; padding: 8px; border-radius: 7px; font-size: 12px;
-    font-weight: 700; cursor: pointer; border: 1.5px solid;
-    transition: all .15s; display: flex; align-items: center;
-    justify-content: center; gap: 5px;
+  .notes-label {
+    font-size: 10px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 5px;
   }
-  .btn-sent   { color: var(--green); border-color: var(--green); background: #f0fdf4; }
-  .btn-sent:hover   { background: var(--green); color: #fff; }
-  .btn-unsent { color: var(--muted); border-color: var(--border); background: #fff; }
-  .btn-unsent:hover { background: var(--muted); color: #fff; }
-  .btn-delete { color: var(--red); border-color: #fecaca; background: #fff5f5;
-                flex: 0; padding: 8px 12px; }
+  .notes-input {
+    width: 100%; border: 1.5px solid var(--border); border-radius: 7px;
+    padding: 8px 10px; font-size: 12px; font-family: inherit;
+    resize: vertical; min-height: 56px; color: var(--text);
+    background: var(--bg); transition: border-color .15s;
+    line-height: 1.5;
+  }
+  .notes-input:focus { outline: none; border-color: var(--orange); background: #fff; }
+  .notes-input::placeholder { color: var(--muted); font-style: italic; }
+
+  .card-actions { padding: 10px 16px 14px; display: flex; gap: 8px; }
+  .btn-delete {
+    flex: 0; padding: 8px 12px; border-radius: 7px; font-size: 12px;
+    font-weight: 700; cursor: pointer; border: 1.5px solid #fecaca;
+    color: var(--red); background: #fff5f5; transition: all .15s;
+  }
   .btn-delete:hover { background: var(--red); color: #fff; border-color: var(--red); }
+  .card-action-info { flex: 1; font-size: 11px; color: var(--muted);
+                      display: flex; align-items: center; }
 
-  /* ── Sent filter ── */
-  .sent-filter { display: flex; gap: 6px; }
-  .sf-btn {
-    padding: 7px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
-    cursor: pointer; border: 1.5px solid var(--border); background: #fff;
-    transition: all .15s; color: var(--muted);
-  }
-  .sf-btn:hover { border-color: var(--orange); color: var(--orange); }
-  .sf-btn.active { background: var(--black); color: #fff; border-color: var(--black); }
-  #sf-sent.active  { background: var(--green); border-color: var(--green); }
-  #sf-pending.active { background: var(--orange); border-color: var(--orange); }
-
-  /* ── Empty state ── */
-  .empty-state {
-    text-align: center; padding: 60px 24px; color: var(--muted);
-  }
-  .empty-icon { font-size: 56px; margin-bottom: 16px; }
+  /* Empty state */
+  .empty-state { text-align: center; padding: 60px 24px; color: var(--muted); }
+  .empty-icon  { font-size: 56px; margin-bottom: 16px; }
   .empty-state h2 { font-size: 20px; color: var(--text); margin-bottom: 8px; }
   .empty-state p  { font-size: 14px; max-width: 380px; margin: 0 auto 24px; }
 
-  /* ── History ── */
+  /* History */
   .history-section { margin: 8px 24px 40px; }
   .history-title {
     font-size: 15px; font-weight: 700; color: var(--muted);
     text-transform: uppercase; letter-spacing: .7px;
-    margin-bottom: 10px; padding-top: 8px;
-    border-top: 1px solid var(--border);
+    margin-bottom: 10px; padding-top: 8px; border-top: 1px solid var(--border);
   }
   details.week-block {
     background: var(--card); border-radius: var(--radius);
@@ -251,24 +279,22 @@
   }
   details.week-block summary:hover { background: var(--orange-light); }
   details.week-block summary::-webkit-details-marker { display: none; }
-  .week-meta { display: flex; align-items: center; gap: 12px; }
+  .week-meta { display: flex; align-items: center; gap: 10px; }
   .week-pill { font-size: 11px; font-weight: 600; padding: 3px 8px;
                border-radius: 12px; background: var(--bg); color: var(--muted); }
   .week-pill.good { background: #f0fdf4; color: var(--green); }
-  .week-actions { display: flex; gap: 6px; }
   .week-detail-body { padding: 4px 18px 14px; }
   .mini-lead-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px;
-    gap: 8px;
+    display: flex; align-items: center; padding: 7px 0;
+    border-bottom: 1px solid var(--border); font-size: 13px; gap: 8px;
   }
   .mini-lead-row:last-child { border-bottom: none; }
-  .mini-name { font-weight: 600; flex: 2; }
+  .mini-name  { font-weight: 600; flex: 2; }
   .mini-email { color: var(--muted); flex: 2; font-size: 12px; }
   .mini-cat   { flex: 1; }
-  .mini-prio  { flex: 0; }
+  .mini-status { flex: 1; }
 
-  /* ── Toast ── */
+  /* Toast */
   #toast {
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
     background: var(--black); color: #fff; padding: 12px 24px;
@@ -280,7 +306,7 @@
   #toast.success { background: var(--green); }
   #toast.error   { background: var(--red); }
 
-  /* ── Loading overlay ── */
+  /* Loading overlay */
   #loading-overlay {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
     z-index: 200; align-items: center; justify-content: center;
@@ -288,8 +314,7 @@
   #loading-overlay.show { display: flex; }
   .loading-box {
     background: var(--card); border-radius: 14px; padding: 32px 40px;
-    text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.3);
-    max-width: 320px;
+    text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.3); max-width: 320px;
   }
   .loading-box .big-spinner {
     width: 48px; height: 48px; border: 4px solid var(--border);
@@ -301,15 +326,15 @@
 
   @media (max-width: 640px) {
     .stats-bar { padding: 12px; gap: 8px; }
-    .stat-value { font-size: 22px; }
-    .generate-panel, .toolbar, .leads-section, .history-section { margin-left: 12px; margin-right: 12px; }
+    .stat-value { font-size: 20px; }
+    .generate-panel, .toolbar, .leads-section, .history-section,
+    .search-wrap { margin-left: 12px; margin-right: 12px; }
     .form-row { flex-direction: column; }
   }
 </style>
 </head>
 <body>
 
-<!-- Loading overlay -->
 <div id="loading-overlay">
   <div class="loading-box">
     <div class="big-spinner"></div>
@@ -318,45 +343,49 @@
   </div>
 </div>
 
-<!-- Toast -->
 <div id="toast"></div>
 
-<!-- Header -->
 <header>
   <div class="logo">
     <div class="logo-icon">B</div>
     <h1><span>BS</span> Weekly Lead Manager</h1>
   </div>
-  <div class="header-right" style="display:flex; align-items:center; gap:16px;">
+  <div style="display:flex; align-items:center; gap:16px;">
     <span style="color:#9ca3af; font-size:13px;">B+S Commercial Kitchens &nbsp;•&nbsp; Australia</span>
     <a href="/logout" style="color:#9ca3af; font-size:13px; text-decoration:none;
-       border:1px solid #444; padding:5px 12px; border-radius:6px;">
-      🔓 Salir
-    </a>
+       border:1px solid #444; padding:5px 12px; border-radius:6px;">🔓 Salir</a>
   </div>
 </header>
 
 <!-- Stats bar -->
-<div class="stats-bar" id="stats-bar">
+<div class="stats-bar">
   <div class="stat-card">
     <div class="stat-label">Total Leads</div>
     <div class="stat-value" id="stat-total">—</div>
   </div>
-  <div class="stat-card sent">
-    <div class="stat-label">Sent</div>
-    <div class="stat-value" id="stat-sent">—</div>
-  </div>
-  <div class="stat-card pending">
-    <div class="stat-label">Pending</div>
+  <div class="stat-card s-pending">
+    <div class="stat-label">⏳ Pending</div>
     <div class="stat-value" id="stat-pending">—</div>
   </div>
-  <div class="stat-card email">
+  <div class="stat-card s-contacted">
+    <div class="stat-label">📤 Contacted</div>
+    <div class="stat-value" id="stat-contacted">—</div>
+  </div>
+  <div class="stat-card s-interested">
+    <div class="stat-label">💡 Interested</div>
+    <div class="stat-value" id="stat-interested">—</div>
+  </div>
+  <div class="stat-card s-meeting">
+    <div class="stat-label">📅 Meeting</div>
+    <div class="stat-value" id="stat-meeting">—</div>
+  </div>
+  <div class="stat-card s-closed">
+    <div class="stat-label">✅ Closed</div>
+    <div class="stat-value" id="stat-closed">—</div>
+  </div>
+  <div class="stat-card s-email">
     <div class="stat-label">With Email</div>
     <div class="stat-value" id="stat-email">—</div>
-  </div>
-  <div class="stat-card weeks">
-    <div class="stat-label">Weeks</div>
-    <div class="stat-value" id="stat-weeks">—</div>
   </div>
 </div>
 
@@ -364,8 +393,7 @@
 <div class="generate-panel">
   <div class="panel-header" id="panel-toggle">
     <div class="panel-title">
-      <span class="icon">🚀</span>
-      Generate New Leads
+      <span class="icon">🚀</span> Generate New Leads
     </div>
     <span class="chevron open" id="chevron">▼</span>
   </div>
@@ -412,49 +440,69 @@
   </div>
 </div>
 
-<!-- Toolbar: tabs + export -->
+<!-- Search bar -->
+<div class="search-wrap">
+  <div class="search-bar">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="search-input" placeholder="Search by name, email, suburb, phone..."
+           oninput="onSearch(this.value)">
+    <button class="search-clear" id="search-clear" onclick="clearSearch()">×</button>
+  </div>
+</div>
+
+<!-- Toolbar -->
 <div class="toolbar">
-  <div style="display:flex; flex-direction:column; gap:8px; flex:1;">
-    <!-- Sent filter toggle -->
-    <div class="sent-filter">
-      <button class="sf-btn active" id="sf-pending" onclick="setSentFilter('pending')">
-        📋 Pendientes <span class="tab-count" id="count-pending-f">0</span>
+  <div class="toolbar-left">
+    <!-- Pipeline filter -->
+    <div class="pipeline-filter" id="pipeline-filter">
+      <button class="pf-btn active" data-s="all"        onclick="setStatusFilter('all')">
+        All <span class="pf-count" id="pfc-all">0</span>
       </button>
-      <button class="sf-btn" id="sf-sent" onclick="setSentFilter('sent')">
-        ✅ Enviados <span class="tab-count" id="count-sent-f">0</span>
+      <button class="pf-btn" data-s="pending"    onclick="setStatusFilter('pending')">
+        ⏳ Pending <span class="pf-count" id="pfc-pending">0</span>
       </button>
-      <button class="sf-btn" id="sf-all-s" onclick="setSentFilter('all')">
-        Todos
+      <button class="pf-btn" data-s="contacted"  onclick="setStatusFilter('contacted')">
+        📤 Contacted <span class="pf-count" id="pfc-contacted">0</span>
+      </button>
+      <button class="pf-btn" data-s="interested" onclick="setStatusFilter('interested')">
+        💡 Interested <span class="pf-count" id="pfc-interested">0</span>
+      </button>
+      <button class="pf-btn" data-s="meeting"    onclick="setStatusFilter('meeting')">
+        📅 Meeting <span class="pf-count" id="pfc-meeting">0</span>
+      </button>
+      <button class="pf-btn" data-s="closed"     onclick="setStatusFilter('closed')">
+        ✅ Closed <span class="pf-count" id="pfc-closed">0</span>
+      </button>
+      <button class="pf-btn" data-s="lost"       onclick="setStatusFilter('lost')">
+        ❌ Lost <span class="pf-count" id="pfc-lost">0</span>
       </button>
     </div>
     <!-- Category tabs -->
     <div class="tabs" id="cat-tabs">
-      <div class="tab active" data-cat="all" onclick="switchTab('all')">
+      <div class="tab active" data-cat="all"        onclick="switchTab('all')">
         All <span class="tab-count" id="count-all">0</span>
       </div>
-      <div class="tab" data-cat="restaurant" onclick="switchTab('restaurant')">
+      <div class="tab" data-cat="restaurant"  onclick="switchTab('restaurant')">
         Restaurants <span class="tab-count" id="count-restaurant">0</span>
       </div>
-      <div class="tab" data-cat="hotel" onclick="switchTab('hotel')">
+      <div class="tab" data-cat="hotel"       onclick="switchTab('hotel')">
         Hotels <span class="tab-count" id="count-hotel">0</span>
       </div>
-      <div class="tab" data-cat="casino" onclick="switchTab('casino')">
+      <div class="tab" data-cat="casino"      onclick="switchTab('casino')">
         Casinos <span class="tab-count" id="count-casino">0</span>
       </div>
-      <div class="tab" data-cat="catering" onclick="switchTab('catering')">
+      <div class="tab" data-cat="catering"    onclick="switchTab('catering')">
         Catering <span class="tab-count" id="count-catering">0</span>
       </div>
-      <div class="tab" data-cat="foodtruck" onclick="switchTab('foodtruck')">
+      <div class="tab" data-cat="foodtruck"   onclick="switchTab('foodtruck')">
         Food Trucks <span class="tab-count" id="count-foodtruck">0</span>
       </div>
     </div>
   </div>
   <div class="export-bar">
-    <button class="btn-export week" id="btn-export-week" onclick="exportWeek()">
-      ⬇ Week Excel
-    </button>
-    <button class="btn-export all" onclick="exportAll()">⬇ All Excel</button>
-    <button class="btn-export csv" onclick="exportCsv()">⬇ CSV</button>
+    <button class="btn-export week" onclick="exportWeek()">⬇ Week Excel</button>
+    <button class="btn-export all"  onclick="exportAll()">⬇ All Excel</button>
+    <button class="btn-export csv"  onclick="exportCsv()">⬇ CSV</button>
   </div>
 </div>
 
@@ -470,14 +518,24 @@
 </div>
 
 <script>
-// ── State ────────────────────────────────────────────────────────────────────
-let allLeads        = [];
-let allWeeks        = [];
-let activeTab       = 'all';
-let activeSentFilter = 'pending';   // 'pending' | 'sent' | 'all'
-let currentWeekId   = null;
+// ── State ─────────────────────────────────────────────────────────────────────
+let allLeads         = [];
+let allWeeks         = [];
+let activeTab        = 'all';
+let activeStatusFilter = 'all';
+let searchQuery      = '';
+let currentWeekId    = null;
 
-// ── Init ─────────────────────────────────────────────────────────────────────
+const STATUS_INFO = {
+  pending:    { label: '⏳ Pending',    color: '#6b7280' },
+  contacted:  { label: '📤 Contacted',  color: '#e85d04' },
+  interested: { label: '💡 Interested', color: '#2563eb' },
+  meeting:    { label: '📅 Meeting',    color: '#7c3aed' },
+  closed:     { label: '✅ Closed',     color: '#16a34a' },
+  lost:       { label: '❌ Lost',       color: '#dc2626' },
+};
+
+// ── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
   await Promise.all([loadStats(), loadLeads(), loadWeeks()]);
 }
@@ -485,18 +543,20 @@ async function init() {
 async function loadStats() {
   const s = await fetchJSON('/api/stats');
   if (!s) return;
-  document.getElementById('stat-total').textContent   = s.total;
-  document.getElementById('stat-sent').textContent    = s.sent;
-  document.getElementById('stat-pending').textContent = s.pending;
-  document.getElementById('stat-email').textContent   = s.with_email;
-  document.getElementById('stat-weeks').textContent   = s.weeks;
+  document.getElementById('stat-total').textContent     = s.total;
+  document.getElementById('stat-pending').textContent   = s.pending;
+  document.getElementById('stat-contacted').textContent = s.contacted || 0;
+  document.getElementById('stat-interested').textContent= s.interested || 0;
+  document.getElementById('stat-meeting').textContent   = s.meeting || 0;
+  document.getElementById('stat-closed').textContent    = s.closed || 0;
+  document.getElementById('stat-email').textContent     = s.with_email;
 }
 
 async function loadLeads() {
   const leads = await fetchJSON('/api/leads');
   if (!leads) return;
   allLeads = leads;
-  updateTabCounts();
+  updateCounts();
   renderLeads();
 }
 
@@ -508,7 +568,7 @@ async function loadWeeks() {
   renderHistory();
 }
 
-// ── Generate ─────────────────────────────────────────────────────────────────
+// ── Generate ──────────────────────────────────────────────────────────────────
 async function generateLeads() {
   const btn  = document.getElementById('btn-generate');
   const stat = document.getElementById('gen-status');
@@ -539,9 +599,7 @@ async function generateLeads() {
       showToast(msg, 'success');
       stat.textContent = msg;
       currentWeekId = data.week_id;
-      allLeads = [...data.leads, ...allLeads];
       await Promise.all([loadStats(), loadLeads(), loadWeeks()]);
-      // Scroll to grid
       document.getElementById('leads-grid').scrollIntoView({behavior:'smooth', block:'start'});
     }
   } catch(e) {
@@ -553,101 +611,137 @@ async function generateLeads() {
   }
 }
 
-// ── Render leads ──────────────────────────────────────────────────────────────
-function setSentFilter(filter) {
-  activeSentFilter = filter;
-  document.getElementById('sf-pending').classList.toggle('active', filter === 'pending');
-  document.getElementById('sf-sent').classList.toggle('active',    filter === 'sent');
-  document.getElementById('sf-all-s').classList.toggle('active',   filter === 'all');
+// ── Filters ───────────────────────────────────────────────────────────────────
+function setStatusFilter(status) {
+  activeStatusFilter = status;
+  document.querySelectorAll('.pf-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.s === status)
+  );
   renderLeads();
-}
-
-function updateTabCounts() {
-  // Category counts (respecting sent filter)
-  const visible = applyFilters(allLeads);
-  const counts  = { all: visible.length };
-  for (const lead of visible) {
-    const cat = lead.category || 'other';
-    counts[cat] = (counts[cat] || 0) + 1;
-  }
-  for (const [cat, elId] of Object.entries({
-    all: 'count-all', restaurant: 'count-restaurant',
-    hotel: 'count-hotel', casino: 'count-casino',
-    catering: 'count-catering', foodtruck: 'count-foodtruck',
-  })) {
-    const el = document.getElementById(elId);
-    if (el) el.textContent = counts[cat] || 0;
-  }
-  // Pending / sent counts (always from full list)
-  const pending = allLeads.filter(l => !l.sent).length;
-  const sent    = allLeads.filter(l =>  l.sent).length;
-  document.getElementById('count-pending-f').textContent = pending;
-  document.getElementById('count-sent-f').textContent    = sent;
-}
-
-function applyFilters(leads) {
-  return leads.filter(l => {
-    const catOk  = activeTab === 'all' || l.category === activeTab;
-    const sentOk = activeSentFilter === 'all'
-                 || (activeSentFilter === 'pending' && !l.sent)
-                 || (activeSentFilter === 'sent'    &&  l.sent);
-    return catOk && sentOk;
-  });
 }
 
 function switchTab(cat) {
   activeTab = cat;
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
+  document.querySelectorAll('.tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.cat === cat)
+  );
   renderLeads();
 }
 
+function onSearch(val) {
+  searchQuery = val.trim().toLowerCase();
+  document.getElementById('search-clear').classList.toggle('visible', searchQuery.length > 0);
+  renderLeads();
+}
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  onSearch('');
+}
+
+function matchesSearch(lead) {
+  if (!searchQuery) return true;
+  return (lead.name    || '').toLowerCase().includes(searchQuery)
+      || (lead.email   || '').toLowerCase().includes(searchQuery)
+      || (lead.suburb  || '').toLowerCase().includes(searchQuery)
+      || (lead.phone   || '').toLowerCase().includes(searchQuery)
+      || (lead.address || '').toLowerCase().includes(searchQuery);
+}
+
+function applyFilters(leads) {
+  return leads.filter(l => {
+    const catOk    = activeTab === 'all' || l.category === activeTab;
+    const statusOk = activeStatusFilter === 'all'
+                  || (l.status || 'pending') === activeStatusFilter;
+    return catOk && statusOk && matchesSearch(l);
+  });
+}
+
+function updateCounts() {
+  const visible = applyFilters(allLeads);
+  const catCounts = { all: visible.length };
+  for (const lead of visible) {
+    const c = lead.category || 'other';
+    catCounts[c] = (catCounts[c] || 0) + 1;
+  }
+  for (const [c, id] of Object.entries({
+    all:'count-all', restaurant:'count-restaurant', hotel:'count-hotel',
+    casino:'count-casino', catering:'count-catering', foodtruck:'count-foodtruck',
+  })) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = catCounts[c] || 0;
+  }
+
+  const statCounts = {};
+  for (const lead of allLeads) {
+    const s = lead.status || 'pending';
+    statCounts[s] = (statCounts[s] || 0) + 1;
+  }
+  statCounts.all = allLeads.length;
+  for (const s of ['all','pending','contacted','interested','meeting','closed','lost']) {
+    const el = document.getElementById('pfc-' + s);
+    if (el) el.textContent = statCounts[s] || 0;
+  }
+}
+
+// ── Render leads ──────────────────────────────────────────────────────────────
 function renderLeads() {
   const grid     = document.getElementById('leads-grid');
   const filtered = applyFilters(allLeads);
 
   if (filtered.length === 0) {
+    const isSearch = searchQuery.length > 0;
     const emptyMsg = allLeads.length === 0
       ? { icon: '📋', title: 'No leads yet',
-          body: 'Click <strong>Generate Leads</strong> arriba para empezar. Claude AI va a encontrar negocios australianos de hostelería.' }
-      : activeSentFilter === 'pending'
-        ? { icon: '🎉', title: '¡Todo enviado!',
-            body: 'No quedan leads pendientes en esta vista. Generá más o cambiá a "Enviados" para ver el historial.' }
-        : activeSentFilter === 'sent'
-          ? { icon: '📭', title: 'Ninguno enviado aún',
-              body: 'Marcá leads como enviados con el botón ✓ y aparecerán aquí.' }
-          : { icon: '🔍', title: 'Sin resultados',
-              body: 'Probá otra categoría o generá más leads.' };
+          body: 'Click <strong>Generate Leads</strong> to get started. Claude AI will find Australian hospitality contacts.' }
+      : isSearch
+        ? { icon: '🔍', title: 'No results',
+            body: `No leads match "<strong>${esc(searchQuery)}</strong>". Try a different search.` }
+        : activeStatusFilter !== 'all'
+          ? { icon: STATUS_INFO[activeStatusFilter]?.label.split(' ')[0] || '📭',
+              title: `No ${activeStatusFilter} leads`,
+              body: 'No leads in this stage. Use the status selector on each card to move leads through the pipeline.' }
+          : { icon: '🔍', title: 'No results', body: 'Try another category or generate more leads.' };
     grid.innerHTML = `
       <div class="empty-state" style="grid-column:1/-1">
         <div class="empty-icon">${emptyMsg.icon}</div>
         <h2>${emptyMsg.title}</h2>
         <p>${emptyMsg.body}</p>
       </div>`;
+    updateCounts();
     return;
   }
 
-  // Sort: high priority first, then unsent first
   const sorted = [...filtered].sort((a, b) => {
     const prioOrder = {high: 0, medium: 1, low: 2};
+    const statusOrder = {pending:0, contacted:1, interested:2, meeting:3, closed:4, lost:5};
     const pDiff = (prioOrder[a.priority] ?? 1) - (prioOrder[b.priority] ?? 1);
     if (pDiff !== 0) return pDiff;
-    return (a.sent || 0) - (b.sent || 0);
+    return (statusOrder[a.status || 'pending'] ?? 0) - (statusOrder[b.status || 'pending'] ?? 0);
   });
 
   grid.innerHTML = sorted.map(lead => cardHTML(lead)).join('');
-  updateTabCounts();
+
+  // Apply status colors to selects
+  sorted.forEach(lead => {
+    const sel = document.getElementById('status-sel-' + lead.id);
+    if (sel) colorStatusSelect(sel, lead.status || 'pending');
+  });
+
+  updateCounts();
 }
 
 function cardHTML(lead) {
-  const cat   = lead.category || 'restaurant';
-  const prio  = lead.priority  || 'medium';
-  const sent  = !!lead.sent;
-  const name  = esc(lead.name || '');
-  const email = esc(lead.email || '');
-  const phone = esc(lead.phone || '');
-  const addr  = [lead.address, lead.suburb, lead.state].filter(Boolean).map(esc).join(', ');
-  const web   = esc(lead.website || '');
-  const reason = esc(lead.reason || '');
+  const cat    = lead.category || 'restaurant';
+  const prio   = lead.priority  || 'medium';
+  const status = lead.status    || 'pending';
+  const name   = esc(lead.name  || '');
+  const email  = esc(lead.email || '');
+  const phone  = esc(lead.phone || '');
+  const addr   = [lead.address, lead.suburb, lead.state].filter(Boolean).map(esc).join(', ');
+  const web    = esc(lead.website || '');
+  const reason = esc(lead.reason  || '');
+  const notes  = esc(lead.notes   || '');
 
   const prioBadge = prio === 'high'
     ? `<span class="badge badge-high">★ HIGH</span>`
@@ -658,50 +752,108 @@ function cardHTML(lead) {
   const catLabel = {restaurant:'Restaurant', hotel:'Hotel', casino:'Casino',
                     catering:'Catering', foodtruck:'Food Truck'}[cat] || cat;
 
-  return `<div class="lead-card${sent ? ' is-sent' : ''}" id="card-${lead.id}">
+  const statusOptions = Object.entries(STATUS_INFO).map(([v, {label}]) =>
+    `<option value="${v}" ${status === v ? 'selected' : ''}>${label}</option>`
+  ).join('');
+
+  const isClosedOrLost = status === 'closed' || status === 'lost';
+
+  return `<div class="lead-card${isClosedOrLost ? ' is-closed' : ''}" id="card-${lead.id}">
     <div class="card-top">
       <div class="card-badges">
         ${prioBadge}
         <span class="badge badge-${cat}">${catLabel}</span>
       </div>
+      <select id="status-sel-${lead.id}" class="status-select"
+              onchange="updateStatus(${lead.id}, this.value)">
+        ${statusOptions}
+      </select>
     </div>
     <div class="card-body">
-      <div class="biz-name${sent ? ' sent-name' : ''}">${name}</div>
+      <div class="biz-name">${name}</div>
       ${email ? `<div class="contact-row"><span class="ci">📧</span><a href="mailto:${email}">${email}</a></div>` : ''}
       ${phone ? `<div class="contact-row"><span class="ci">📞</span>${phone}</div>` : ''}
       ${addr  ? `<div class="contact-row"><span class="ci">📍</span>${addr}</div>` : ''}
       ${web   ? `<div class="contact-row"><span class="ci">🌐</span><a href="${web}" target="_blank" rel="noopener">${web.replace('https://','')}</a></div>` : ''}
       ${reason ? `<div class="reason-text">${reason}</div>` : ''}
     </div>
+    <div class="notes-section">
+      <div class="notes-label">📝 Notes</div>
+      <textarea id="notes-${lead.id}" class="notes-input"
+                placeholder="Add notes, comments, follow-up info..."
+                onblur="saveNotes(${lead.id}, this.value)">${notes}</textarea>
+    </div>
     <div class="card-actions">
-      ${sent
-        ? `<button class="btn-unsent" onclick="toggleSent(${lead.id}, false)">↩ Mark Unsent</button>`
-        : `<button class="btn-sent"   onclick="toggleSent(${lead.id}, true)">✓ Mark Sent</button>`
-      }
-      <button class="btn-delete" onclick="deleteLead(${lead.id})" title="Delete">🗑</button>
+      <span class="card-action-info">Week ${lead.week_id || '—'}</span>
+      <button class="btn-delete" onclick="deleteLead(${lead.id})" title="Delete">🗑 Delete</button>
     </div>
   </div>`;
 }
 
 // ── Lead actions ──────────────────────────────────────────────────────────────
-async function toggleSent(id, sent) {
-  await fetch(`/api/leads/${id}/sent`, {
-    method: 'PUT',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({sent}),
-  });
+function colorStatusSelect(el, status) {
+  const colors = {
+    pending: '#6b7280', contacted: '#e85d04', interested: '#2563eb',
+    meeting: '#7c3aed', closed: '#16a34a', lost: '#dc2626',
+  };
+  el.style.borderColor = colors[status] || '#e0e0e0';
+  el.style.color       = colors[status] || '#6b7280';
+}
+
+async function updateStatus(id, status) {
   const lead = allLeads.find(l => l.id === id);
-  if (lead) lead.sent = sent ? 1 : 0;
+  if (!lead) return;
+
+  // Save any unsaved notes before potentially re-rendering
+  const notesEl = document.getElementById('notes-' + id);
+  if (notesEl && notesEl.value !== (lead.notes || '')) {
+    lead.notes = notesEl.value;
+    fetch(`/api/leads/${id}/notes`, {
+      method: 'PUT', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({notes: notesEl.value}),
+    });
+  }
+
+  lead.status = status;
+  await fetch(`/api/leads/${id}/status`, {
+    method: 'PUT', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({status}),
+  });
+
+  const sel = document.getElementById('status-sel-' + id);
+  if (sel) colorStatusSelect(sel, status);
+
+  const card = document.getElementById('card-' + id);
+  if (card) {
+    const isClosedOrLost = status === 'closed' || status === 'lost';
+    card.classList.toggle('is-closed', isClosedOrLost);
+  }
+
+  updateCounts();
   await loadStats();
-  renderLeads();
-  showToast(sent ? '✓ Marked as sent' : '↩ Marked as unsent', 'success');
+  showToast(STATUS_INFO[status]?.label || status, 'success');
+
+  if (activeStatusFilter !== 'all' && status !== activeStatusFilter) {
+    renderLeads();
+  }
+}
+
+async function saveNotes(id, notes) {
+  const lead = allLeads.find(l => l.id === id);
+  if (!lead) return;
+  if ((lead.notes || '') === notes) return;
+  lead.notes = notes;
+  await fetch(`/api/leads/${id}/notes`, {
+    method: 'PUT', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({notes}),
+  });
 }
 
 async function deleteLead(id) {
-  if (!confirm('Delete this lead?')) return;
+  if (!confirm('Delete this lead? This cannot be undone.')) return;
   await fetch(`/api/leads/${id}`, {method: 'DELETE'});
   allLeads = allLeads.filter(l => l.id !== id);
-  updateTabCounts();
+  updateCounts();
   renderLeads();
   await loadStats();
   showToast('🗑 Lead deleted', '');
@@ -732,25 +884,27 @@ function renderHistory() {
   section.style.display = 'block';
 
   list.innerHTML = allWeeks.map((wk, idx) => {
-    const leads   = allLeads.filter(l => l.week_id === wk.id);
-    const isFirst = idx === 0;
-    const rows    = leads.slice(0, 30).map(l => `
-      <div class="mini-lead-row">
+    const leads = allLeads.filter(l => l.week_id === wk.id);
+    const rows  = leads.slice(0, 30).map(l => {
+      const s = l.status || 'pending';
+      return `<div class="mini-lead-row">
         <span class="mini-name">${esc(l.name)}</span>
         <span class="mini-email">${esc(l.email || '—')}</span>
         <span class="mini-cat"><span class="badge badge-${l.category}">${l.category}</span></span>
-        <span class="mini-prio"><span class="badge badge-${l.priority}">${l.priority}</span></span>
-      </div>`).join('');
+        <span class="mini-status" style="color:${STATUS_INFO[s]?.color || '#6b7280'};font-size:11px;font-weight:700;">
+          ${STATUS_INFO[s]?.label || s}
+        </span>
+      </div>`;
+    }).join('');
     return `
-      <details class="week-block" ${isFirst ? 'open' : ''}>
+      <details class="week-block" ${idx === 0 ? 'open' : ''}>
         <summary>
           <span>${wk.week_label}</span>
           <div class="week-meta">
             <span class="week-pill">${wk.total_leads || 0} leads</span>
-            <span class="week-pill good">${wk.sent_leads || 0} sent</span>
-            <div class="week-actions">
-              <button class="btn-export week" onclick="event.preventDefault(); window.location.href='/api/export/week/${wk.id}'">⬇ Excel</button>
-            </div>
+            <span class="week-pill good">${wk.sent_leads || 0} contacted</span>
+            <button class="btn-export week" style="font-size:11px;padding:4px 10px;"
+              onclick="event.preventDefault(); window.location.href='/api/export/week/${wk.id}'">⬇ Excel</button>
           </div>
         </summary>
         <div class="week-detail-body">${rows || '<p style="color:var(--muted);font-size:13px;padding:8px 0">No leads this week</p>'}</div>
@@ -778,10 +932,8 @@ async function fetchJSON(url) {
 
 function esc(str) {
   return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 let toastTimer;
@@ -790,14 +942,14 @@ function showToast(msg, type) {
   el.textContent = msg;
   el.className   = 'show ' + (type || '');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.className = ''; }, 3500);
+  toastTimer = setTimeout(() => { el.className = ''; }, 3200);
 }
 
 function showOverlay(show) {
   document.getElementById('loading-overlay').classList.toggle('show', show);
 }
 
-// ── City data by state ────────────────────────────────────────────────────────
+// ── City data ─────────────────────────────────────────────────────────────────
 const CITIES = {
   'Victoria': [
     'Melbourne CBD','Southbank','Docklands','South Yarra','St Kilda',
@@ -806,7 +958,7 @@ const CITIES = {
     'Dandenong','Frankston','Hawthorn','Prahran','Windsor',
     'Toorak','Brighton','Camberwell','Caulfield','Port Melbourne',
     'Albert Park','South Melbourne','Geelong','Ballarat','Bendigo',
-    'Shepparton','Albury-Wodonga','Warrnambool','Mildura','Heidelberg',
+    'Shepparton','Warrnambool','Mildura','Heidelberg',
   ],
   'New South Wales': [
     'Sydney CBD','Surry Hills','Newtown','Glebe','Pyrmont',
@@ -814,41 +966,35 @@ const CITIES = {
     'Parramatta','Bondi','Bondi Junction','Manly','Chatswood',
     'North Sydney','Randwick','Liverpool','Penrith','Wollongong',
     'Newcastle','Coffs Harbour','Albury','Wagga Wagga','Orange',
-    'Dubbo','Byron Bay','Tweed Heads','Leichhardt','Marrickville',
-    'Strathfield','Hurstville','Kogarah','Rockdale','Bankstown',
+    'Dubbo','Byron Bay','Leichhardt','Marrickville','Bankstown',
   ],
   'Queensland': [
     'Brisbane CBD','South Brisbane','Fortitude Valley','New Farm',
-    'West End','Spring Hill','Kangaroo Point','Toowong','Paddington',
-    'Indooroopilly','Mount Gravatt','Chermside','Carindale',
-    'Gold Coast','Surfers Paradise','Broadbeach','Burleigh Heads',
-    'Noosa','Sunshine Coast','Cairns','Townsville','Toowoomba',
-    'Rockhampton','Mackay','Ipswich','Redcliffe','Logan Central',
-    'Bundaberg','Hervey Bay','Gladstone',
+    'West End','Spring Hill','Toowong','Paddington','Indooroopilly',
+    'Mount Gravatt','Chermside','Gold Coast','Surfers Paradise',
+    'Broadbeach','Burleigh Heads','Noosa','Sunshine Coast',
+    'Cairns','Townsville','Toowoomba','Rockhampton','Ipswich',
   ],
   'Western Australia': [
     'Perth CBD','Fremantle','Subiaco','Leederville','Mount Lawley',
-    'Northbridge','East Perth','West Perth','Cottesloe','Scarborough',
+    'Northbridge','East Perth','Cottesloe','Scarborough',
     'Joondalup','Rockingham','Mandurah','Bunbury','Broome',
     'Geraldton','Albany','Kalgoorlie','Morley','Cannington',
-    'Canning Vale','Balcatta','Osborne Park','Claremont','Nedlands',
   ],
   'South Australia': [
     'Adelaide CBD','Glenelg','North Adelaide','Norwood','Unley',
-    'Burnside','Prospect','Hindmarsh','Port Adelaide','Hindley Street',
-    'Rundle Mall','Semaphore','Victor Harbor','Mount Gambier',
-    'Whyalla','Murray Bridge','Port Augusta','Gawler','Salisbury',
-    'Elizabeth','Modbury','Marion','Noarlunga',
+    'Burnside','Prospect','Port Adelaide','Hindley Street',
+    'Semaphore','Victor Harbor','Mount Gambier','Whyalla',
+    'Murray Bridge','Port Augusta','Gawler','Salisbury',
   ],
   'Tasmania': [
     'Hobart CBD','Sandy Bay','North Hobart','Salamanca','Battery Point',
     'Launceston','Devonport','Burnie','Kingston','Glenorchy',
-    'Sorell','Richmond','Huonville',
   ],
   'Australian Capital Territory': [
     'Canberra CBD','Civic','Braddon','Manuka','Kingston',
     'Barton','Griffith','Deakin','Woden','Belconnen',
-    'Tuggeranong','Gungahlin','Fyshwick',
+    'Tuggeranong','Gungahlin',
   ],
 };
 
@@ -860,9 +1006,7 @@ function updateCities() {
     + cities.map(c => `<option value="${c}">${c}</option>`).join('');
 }
 
-// Populate cities on state change
 document.getElementById('sel-state').addEventListener('change', updateCities);
-// Populate on load
 updateCities();
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
