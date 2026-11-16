@@ -13,7 +13,7 @@ from openpyxl.utils import get_column_letter
 import database as db
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-me")
+app.secret_key = os.environ.get("SECRET_KEY", "bs-lead-manager-secret-2024")
 
 
 def _load_env():
@@ -30,17 +30,11 @@ def _load_env():
 _load_env()
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-MODEL = os.environ.get("CLAUDE_MODEL", "claude-haiku-4-5-20251001")
 
-# Crear tablas siempre (gunicorn en Render no ejecuta el bloque __main__)
-db.init_db()
-
-# ── Usuario autorizado (se configura con variables de entorno, NO en el código) ─
-# En Render: Environment → APP_USERNAME y APP_PASSWORD
-# En local:  agregalas al archivo .env
-APP_USERNAME = os.environ.get("APP_USERNAME", "bscommercialkitchens").strip().lower()
-APP_PASSWORD = os.environ.get("APP_PASSWORD", "")
-USERS = {APP_USERNAME: APP_PASSWORD} if APP_PASSWORD else {}
+# ── Usuarios autorizados ───────────────────────────────────────────────────────
+USERS = {
+    "bscommercialkitchens": os.environ.get("APP_PASSWORD", "BS2024admin"),
+}
 
 # ── Login decorator ────────────────────────────────────────────────────────────
 def login_required(f):
@@ -60,7 +54,9 @@ def login():
     if request.method == "POST":
         username = request.form.get("username", "").strip().lower()
         password = request.form.get("password", "").strip()
-        if username in USERS and USERS[username] == password:
+        # Reload USERS each time so env var changes take effect
+        users = {"bscommercialkitchens": os.environ.get("APP_PASSWORD", "BS2024admin")}
+        if username in users and users[username] == password:
             session["logged_in"] = True
             session["username"]  = username
             return redirect(url_for("index"))
@@ -75,22 +71,14 @@ def logout():
 
 
 # ── Startup check ─────────────────────────────────────────────────────────────
-
 def check_api_key():
     if not ANTHROPIC_API_KEY:
         print("\n" + "=" * 60)
         print("  WARNING: ANTHROPIC_API_KEY is not set!")
-        print("=" * 60)
-        print("  Set it before running:")
-        print("  Windows CMD:  set ANTHROPIC_API_KEY=sk-ant-...")
-        print("  PowerShell:   $env:ANTHROPIC_API_KEY='sk-ant-...'")
-        print("  Mac/Linux:    export ANTHROPIC_API_KEY=sk-ant-...")
-        print("  Get a key at: https://console.anthropic.com")
         print("=" * 60 + "\n")
 
 
 # ── Prompt builder ────────────────────────────────────────────────────────────
-
 def build_prompt(state: str, city: str, category: str, quantity: int, existing: list) -> str:
     city_str = f", {city}" if city.strip() else ""
 
@@ -102,7 +90,7 @@ def build_prompt(state: str, city: str, category: str, quantity: int, existing: 
     else:
         cat_filter = f"Generate ONLY '{category}' businesses."
 
-    names_to_exclude = [name for name, _ in existing[:80]]
+    names_to_exclude = [name for name, _ in existing[:150]]
     exclude_block = ""
     if names_to_exclude:
         exclude_block = (
@@ -110,7 +98,7 @@ def build_prompt(state: str, city: str, category: str, quantity: int, existing: 
             + "\n".join(f"- {n}" for n in names_to_exclude)
         )
 
-    return f"""You are generating sales leads for B+S Commercial Kitchens, a 70-year-old Australian commercial kitchen equipment supplier (woks, fryers, combi ovens, refrigeration, prep benches, etc.).
+    return f"""You are generating sales leads for B+S Commercial Kitchens, a 70-year-old Australian commercial kitchen equipment supplier (woks, fryers, combi ovens, refrigeration, prep benches, dishwashers, bain maries, etc.).
 
 Generate exactly {quantity} unique Australian hospitality business sales leads in {state}{city_str}.
 {cat_filter}
@@ -137,7 +125,7 @@ Priority rules:
 - medium = independent full-service restaurants, 3-4 star hotels, established catering companies
 - low = small cafes, food trucks, small family restaurants, pop-ups
 
-Use real suburb names in {state}. Phone numbers must be realistic Australian format. All websites must end in .com.au or .net.au. Reasons should mention specific equipment types.
+Use real suburb names in {state}. Phone numbers must be realistic Australian format. All websites must end in .com.au or .net.au. Reasons should mention specific equipment types (combi ovens, fryers, bain maries, etc.).
 Generate exactly {quantity} objects."""
 
 
@@ -145,35 +133,75 @@ def parse_leads(text: str) -> list:
     text = text.strip()
     try:
         data = json.loads(text)
-        if isinstance(data, list):
-            return data
-    except Exception:
-        pass
+        if isinstance(data, list): return data
+    except Exception: pass
     match = re.search(r"\[[\s\S]*\]", text)
     if match:
         try:
             data = json.loads(match.group(0))
-            if isinstance(data, list):
-                return data
-        except Exception:
-            pass
+            if isinstance(data, list): return data
+        except Exception: pass
     clean = re.sub(r"```(?:json)?", "", text).strip().strip("`")
     try:
         data = json.loads(clean)
-        if isinstance(data, list):
-            return data
-    except Exception:
-        pass
+        if isinstance(data, list): return data
+    except Exception: pass
     return []
 
 
-# ── Excel helpers ─────────────────────────────────────────────────────────────
+# ── Email template builder ────────────────────────────────────────────────────
+def build_email_template(lead: dict) -> dict:
+    """Return {"subject": str, "body": str} for the email modal."""
+    name     = lead.get("name", "")
+    suburb   = lead.get("suburb", "")
+    interest = lead.get("interest_product", "")
+    reason   = lead.get("reason", "")
+    product_line = interest if interest else "commercial kitchen equipment"
+    subject  = f"B+S Commercial Kitchens – Quality {product_line.title()} for {name}"
+    body = f"""Dear {name} Team,
 
+I hope this message finds you well.
+
+My name is [Your Name] from B+S Commercial Kitchens. We have been supplying Australian hospitality businesses with premium commercial kitchen equipment for over 70 years.
+
+I'm reaching out because we believe {name} in {suburb} could benefit from our range of {product_line}. {reason}
+
+At B+S Commercial Kitchens we offer:
+• Energy-efficient cooking equipment (combi ovens, fryers, woks, grills)
+• Professional refrigeration and cold rooms
+• Prep benches, bain maries, and food holding equipment
+• Dishwashers and warewashing solutions
+• After-sales service and spare parts Australia-wide
+
+We would love to arrange a brief chat or showroom visit at your convenience — no obligation, just a conversation about how we can support your kitchen.
+
+Please feel free to reply to this email or call us at (03) 9460 5655.
+
+Warm regards,
+
+[Your Name]
+B+S Commercial Kitchens
+📞 (03) 9460 5655
+🌐 www.bscommercialkitchens.com.au
+📍 Reservoir, VIC"""
+    return {"subject": subject, "body": body}
+
+
+# ── Excel helpers ─────────────────────────────────────────────────────────────
 HEADERS    = ["Name", "Category", "Email", "Phone", "Address",
-              "Suburb", "State", "Website", "Priority", "Reason", "Sent"]
-COL_WIDTHS = [35, 14, 32, 18, 28, 18, 8, 36, 10, 52, 8]
+              "Suburb", "State", "Website", "Priority", "Status",
+              "Interest / Product", "Reason", "Notes", "Sent"]
+COL_WIDTHS = [35, 14, 32, 18, 28, 18, 8, 36, 10, 12, 22, 52, 30, 8]
 ORANGE     = "E85D04"
 PRIO_FILL  = {"high": "FFE0E0", "medium": "FFF8E0", "low": "E6F4E6"}
+STATUS_FILL = {
+    "pending":    "FFFBEB",
+    "contacted":  "EFF6FF",
+    "interested": "F5F3FF",
+    "meeting":    "ECFEFF",
+    "closed":     "F0FDF4",
+    "lost":       "F9FAFB",
+}
 
 
 def _style_sheet(ws, leads: list):
@@ -188,7 +216,8 @@ def _style_sheet(ws, leads: list):
     ws.freeze_panes = "A2"
 
     for i, lead in enumerate(leads, 2):
-        prio = lead.get("priority", "medium")
+        prio   = lead.get("priority", "medium")
+        status = lead.get("status", "pending")
         row_data = [
             lead.get("name", ""),
             lead.get("category", ""),
@@ -199,16 +228,27 @@ def _style_sheet(ws, leads: list):
             lead.get("state", ""),
             lead.get("website", ""),
             prio.upper(),
+            status.upper(),
+            lead.get("interest_product", ""),
             lead.get("reason", ""),
+            lead.get("notes", ""),
             "Yes" if lead.get("sent") else "No",
         ]
         ws.append(row_data)
-        fill_hex = PRIO_FILL.get(prio, "FFFFFF")
-        row_fill = PatternFill(start_color=fill_hex, end_color=fill_hex, fill_type="solid")
-        for cell in ws[i]:
-            cell.alignment = Alignment(wrap_text=True, vertical="top")
-            if prio == "high":
+        # Priority tint for high-priority rows
+        if prio == "high":
+            fill_hex = PRIO_FILL["high"]
+            row_fill = PatternFill(start_color=fill_hex, end_color=fill_hex, fill_type="solid")
+            for cell in ws[i]:
+                cell.alignment = Alignment(wrap_text=True, vertical="top")
                 cell.fill = row_fill
+        else:
+            # Status tint for other rows
+            sfill_hex = STATUS_FILL.get(status, "FFFFFF")
+            sfill = PatternFill(start_color=sfill_hex, end_color=sfill_hex, fill_type="solid")
+            for cell in ws[i]:
+                cell.alignment = Alignment(wrap_text=True, vertical="top")
+                cell.fill = sfill
         ws.row_dimensions[i].height = 28
 
     for idx, width in enumerate(COL_WIDTHS, 1):
@@ -231,8 +271,8 @@ def _build_workbook_all():
     all_leads = db.get_all_leads()
     wb        = openpyxl.Workbook()
 
-    ws_all        = wb.active
-    ws_all.title  = "All Leads"
+    ws_all       = wb.active
+    ws_all.title = "All Leads"
     _style_sheet(ws_all, all_leads)
 
     cats: dict[str, list] = {}
@@ -244,24 +284,25 @@ def _build_workbook_all():
         _style_sheet(ws, cat_leads)
 
     ws_sum = wb.create_sheet(title="Summary")
-    ws_sum.append(["Category", "Total", "Sent", "Pending", "With Email"])
+    ws_sum.append(["Category", "Total", "Contacted+", "Closed", "Lost", "With Email"])
     hdr_fill = PatternFill(start_color=ORANGE, end_color=ORANGE, fill_type="solid")
     hdr_font = Font(bold=True, color="FFFFFF")
     for cell in ws_sum[1]:
-        cell.fill      = hdr_fill
-        cell.font      = hdr_font
+        cell.fill = hdr_fill; cell.font = hdr_font
         cell.alignment = Alignment(horizontal="center")
     for cat, cat_leads in sorted(cats.items()):
-        sent  = sum(1 for l in cat_leads if l.get("sent"))
-        wmail = sum(1 for l in cat_leads if l.get("email"))
-        ws_sum.append([cat.title(), len(cat_leads), sent, len(cat_leads) - sent, wmail])
-    for col in ["A", "B", "C", "D", "E"]:
+        contacted_plus = sum(1 for l in cat_leads if l.get("status","pending") not in ("pending","lost"))
+        closed = sum(1 for l in cat_leads if l.get("status") == "closed")
+        lost   = sum(1 for l in cat_leads if l.get("status") == "lost")
+        wmail  = sum(1 for l in cat_leads if l.get("email"))
+        ws_sum.append([cat.title(), len(cat_leads), contacted_plus, closed, lost, wmail])
+    for col in ["A","B","C","D","E","F"]:
         ws_sum.column_dimensions[col].width = 18
 
     return wb, all_leads
 
 
-# ── API routes (todas protegidas con login) ───────────────────────────────────
+# ── API routes ────────────────────────────────────────────────────────────────
 
 @app.route("/")
 @login_required
@@ -299,6 +340,42 @@ def api_current_leads():
     return jsonify(db.get_current_week_leads())
 
 
+@app.route("/api/leads/<int:lead_id>/history")
+@login_required
+def api_lead_history(lead_id):
+    return jsonify(db.get_status_history(lead_id))
+
+
+@app.route("/api/leads/stale")
+@login_required
+def api_stale_leads():
+    days = int(request.args.get("days", 7))
+    return jsonify(db.get_stale_leads(days))
+
+
+@app.route("/api/dashboard/categories")
+@login_required
+def api_dashboard_categories():
+    return jsonify(db.get_pipeline_stats_by_category())
+
+
+@app.route("/api/dashboard/evolution")
+@login_required
+def api_dashboard_evolution():
+    return jsonify(db.get_weekly_evolution())
+
+
+@app.route("/api/leads/<int:lead_id>/email-template")
+@login_required
+def api_email_template(lead_id):
+    leads = db.get_all_leads()
+    lead  = next((l for l in leads if l["id"] == lead_id), None)
+    if not lead:
+        return jsonify({"error": "Lead not found"}), 404
+    tpl = build_email_template(lead)
+    return jsonify({"subject": tpl["subject"], "body": tpl["body"]})
+
+
 @app.route("/api/generate", methods=["POST"])
 @login_required
 def api_generate():
@@ -310,18 +387,16 @@ def api_generate():
     state    = data.get("state",    "Victoria")
     city     = data.get("city",     "").strip()
     category = data.get("category", "all")
-    quantity = min(int(data.get("quantity", 20)), 50)
+    quantity = min(int(data.get("quantity", 20)), 200)   # max 200
 
     existing = db.get_all_business_names()
     prompt   = build_prompt(state, city, category, quantity, existing)
 
     try:
-        client  = anthropic.Anthropic(api_key=key, timeout=90.0, max_retries=1)
-        # Haiku = el modelo más barato. max_tokens ajustado a la cantidad pedida
-        # (~170 tokens por lead) para no pagar de más.
+        client  = anthropic.Anthropic(api_key=key)
         message = client.messages.create(
-            model=MODEL,
-            max_tokens=min(quantity * 200 + 400, 8000),
+            model="claude-haiku-4-5-20251001",
+            max_tokens=16000,
             messages=[{"role": "user", "content": prompt}],
         )
         raw   = message.content[0].text
@@ -335,16 +410,44 @@ def api_generate():
         return jsonify({"error": str(exc)}), 500
 
     week_id = db.get_or_create_current_week()
-    saved   = db.save_leads(leads, week_id)
+
+    # ── Weekly limit check ────────────────────────────────────────────────────
+    weekly_limit = db.WEEKLY_LIMIT
+    if weekly_limit > 0:
+        already   = db.get_weekly_lead_count(week_id)
+        remaining = weekly_limit - already
+        if remaining <= 0:
+            return jsonify({
+                "error": f"Weekly limit of {weekly_limit} leads reached. "
+                         f"Try again next week or ask your admin to increase WEEKLY_LIMIT."
+            }), 429
+        if quantity > remaining:
+            quantity = remaining
+            leads    = leads[:quantity]
+
+    saved = db.save_leads(leads, week_id)
 
     return jsonify({
-        "success":   True,
-        "week_id":   week_id,
-        "leads":     saved,
-        "generated": len(leads),
-        "saved":     len(saved),
-        "skipped":   len(leads) - len(saved),
+        "success":      True,
+        "week_id":      week_id,
+        "leads":        saved,
+        "generated":    len(leads),
+        "saved":        len(saved),
+        "skipped":      len(leads) - len(saved),
+        "weekly_limit": weekly_limit,
+        "weekly_count": db.get_weekly_lead_count(week_id),
     })
+
+
+@app.route("/api/leads/<int:lead_id>/status", methods=["PUT"])
+@login_required
+def api_update_status(lead_id):
+    data             = request.json or {}
+    status           = data.get("status", "pending")
+    notes            = data.get("notes")
+    interest_product = data.get("interest_product")
+    db.update_status(lead_id, status, notes, interest_product)
+    return jsonify({"success": True})
 
 
 @app.route("/api/leads/<int:lead_id>/sent", methods=["PUT"])
@@ -370,13 +473,12 @@ def api_export_week(week_id):
     wb, leads = _build_workbook_for_week(week_id)
     if not leads:
         return jsonify({"error": "No leads for this week"}), 404
-    week = db.get_week(week_id)
+    week  = db.get_week(week_id)
     label = (week["week_label"].replace(" ", "_").replace("/", "-")
              if week else f"week_{week_id}")
     fname = f"BS_Leads_{label}_{datetime.now().strftime('%Y%m%d')}.xlsx"
-    buf = io.BytesIO()
-    wb.save(buf)
-    buf.seek(0)
+    buf   = io.BytesIO()
+    wb.save(buf); buf.seek(0)
     return send_file(buf, as_attachment=True, download_name=fname,
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
@@ -388,9 +490,8 @@ def api_export_all():
     if not leads:
         return jsonify({"error": "No leads in database"}), 404
     fname = f"BS_All_Leads_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
-    buf = io.BytesIO()
-    wb.save(buf)
-    buf.seek(0)
+    buf   = io.BytesIO()
+    wb.save(buf); buf.seek(0)
     return send_file(buf, as_attachment=True, download_name=fname,
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
@@ -401,20 +502,22 @@ def api_export_csv():
     leads = db.get_all_leads()
     if not leads:
         return jsonify({"error": "No leads in database"}), 404
-    fields = ["name", "category", "email", "phone", "address", "suburb",
-              "state", "website", "priority", "reason", "sent", "week_label"]
+    fields = ["name","category","email","phone","address","suburb","state",
+              "website","priority","status","interest_product","reason","notes","sent","week_label"]
     buf = io.StringIO()
     w   = csv.DictWriter(buf, fieldnames=fields, extrasaction="ignore")
     w.writeheader()
     for lead in leads:
         lead["sent"] = "Yes" if lead.get("sent") else "No"
         w.writerow({f: lead.get(f, "") for f in fields})
-    fname  = f"BS_Leads_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
-    bbuf   = io.BytesIO(buf.getvalue().encode("utf-8-sig"))
+    fname = f"BS_Leads_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
+    bbuf  = io.BytesIO(buf.getvalue().encode("utf-8-sig"))
     return send_file(bbuf, as_attachment=True, download_name=fname, mimetype="text/csv")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
+
+db.init_db()
 
 if __name__ == "__main__":
     check_api_key()
@@ -423,4 +526,4 @@ if __name__ == "__main__":
     print("  BS Weekly Lead Manager")
     print("  http://localhost:5000")
     print("=" * 52 + "\n")
-    app.run(debug=False, port=5000)
+    app.run(debug=True, port=5000)
