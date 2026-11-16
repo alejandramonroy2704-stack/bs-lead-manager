@@ -3,7 +3,7 @@ SQLite (local) + PostgreSQL (Render) persistence layer for BS Lead Manager.
 """
 import os
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 USE_PG = bool(DATABASE_URL and DATABASE_URL.startswith("postgres"))
@@ -14,7 +14,11 @@ if USE_PG:
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "leads.db")
 
-STATUS_VALUES = ('pending', 'contacted', 'interested', 'meeting', 'closed', 'lost')
+# Weekly generation limit (0 = unlimited)
+WEEKLY_LIMIT = int(os.environ.get("WEEKLY_LIMIT", "0"))
+
+# Valid status values for the pipeline
+VALID_STATUSES = ("pending", "contacted", "interested", "meeting", "closed", "lost")
 
 def _conn():
     if USE_PG:
@@ -53,31 +57,44 @@ def init_db():
             )""")
         cur.execute("""
             CREATE TABLE IF NOT EXISTS leads (
-                id         SERIAL PRIMARY KEY,
-                week_id    INTEGER NOT NULL,
-                name       TEXT NOT NULL,
-                category   TEXT NOT NULL DEFAULT 'restaurant',
-                email      TEXT,
-                phone      TEXT,
-                address    TEXT,
-                suburb     TEXT,
-                state      TEXT,
-                website    TEXT,
-                priority   TEXT NOT NULL DEFAULT 'medium',
-                reason     TEXT,
-                status     TEXT NOT NULL DEFAULT 'pending',
-                notes      TEXT DEFAULT '',
-                sent       INTEGER NOT NULL DEFAULT 0,
-                created_at TEXT NOT NULL,
+                id               SERIAL PRIMARY KEY,
+                week_id          INTEGER NOT NULL,
+                name             TEXT NOT NULL,
+                category         TEXT NOT NULL DEFAULT 'restaurant',
+                email            TEXT,
+                phone            TEXT,
+                address          TEXT,
+                suburb           TEXT,
+                state            TEXT,
+                website          TEXT,
+                priority         TEXT NOT NULL DEFAULT 'medium',
+                reason           TEXT,
+                sent             INTEGER NOT NULL DEFAULT 0,
+                status           TEXT NOT NULL DEFAULT 'pending',
+                notes            TEXT DEFAULT '',
+                interest_product TEXT DEFAULT '',
+                status_updated_at TEXT,
+                created_at       TEXT NOT NULL,
                 FOREIGN KEY (week_id) REFERENCES weeks(id)
             )""")
-        for col_def in [
-            "ALTER TABLE leads ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'pending'",
-            "ALTER TABLE leads ADD COLUMN IF NOT EXISTS notes TEXT DEFAULT ''",
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS status_history (
+                id         SERIAL PRIMARY KEY,
+                lead_id    INTEGER NOT NULL,
+                old_status TEXT,
+                new_status TEXT NOT NULL,
+                notes      TEXT,
+                changed_at TEXT NOT NULL,
+                FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
+            )""")
+        for col, definition in [
+            ("status",           "TEXT NOT NULL DEFAULT 'pending'"),
+            ("notes",            "TEXT DEFAULT ''"),
+            ("interest_product", "TEXT DEFAULT ''"),
+            ("status_updated_at","TEXT"),
         ]:
-            try: cur.execute(col_def)
-            except: pass
-        cur.execute("UPDATE leads SET status='contacted' WHERE sent=1 AND status='pending'")
+            try: cur.execute(f"ALTER TABLE leads ADD COLUMN {col} {definition}")
+            except Exception: pass
     else:
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS weeks (
@@ -86,32 +103,46 @@ def init_db():
                 created_at TEXT NOT NULL
             );
             CREATE TABLE IF NOT EXISTS leads (
-                id         INTEGER PRIMARY KEY AUTOINCREMENT,
-                week_id    INTEGER NOT NULL,
-                name       TEXT NOT NULL,
-                category   TEXT NOT NULL DEFAULT 'restaurant',
-                email      TEXT,
-                phone      TEXT,
-                address    TEXT,
-                suburb     TEXT,
-                state      TEXT,
-                website    TEXT,
-                priority   TEXT NOT NULL DEFAULT 'medium',
-                reason     TEXT,
-                status     TEXT NOT NULL DEFAULT 'pending',
-                notes      TEXT DEFAULT '',
-                sent       INTEGER NOT NULL DEFAULT 0,
-                created_at TEXT NOT NULL,
+                id               INTEGER PRIMARY KEY AUTOINCREMENT,
+                week_id          INTEGER NOT NULL,
+                name             TEXT NOT NULL,
+                category         TEXT NOT NULL DEFAULT 'restaurant',
+                email            TEXT,
+                phone            TEXT,
+                address          TEXT,
+                suburb           TEXT,
+                state            TEXT,
+                website          TEXT,
+                priority         TEXT NOT NULL DEFAULT 'medium',
+                reason           TEXT,
+                sent             INTEGER NOT NULL DEFAULT 0,
+                status           TEXT NOT NULL DEFAULT 'pending',
+                notes            TEXT DEFAULT '',
+                interest_product TEXT DEFAULT '',
+                status_updated_at TEXT,
+                created_at       TEXT NOT NULL,
                 FOREIGN KEY (week_id) REFERENCES weeks(id)
             );
+            CREATE TABLE IF NOT EXISTS status_history (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                lead_id    INTEGER NOT NULL,
+                old_status TEXT,
+                new_status TEXT NOT NULL,
+                notes      TEXT,
+                changed_at TEXT NOT NULL,
+                FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
+            );
         """)
-        for col_def in [
-            "ALTER TABLE leads ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'",
-            "ALTER TABLE leads ADD COLUMN notes TEXT DEFAULT ''",
+        for col, definition in [
+            ("status",           "TEXT NOT NULL DEFAULT 'pending'"),
+            ("notes",            "TEXT DEFAULT ''"),
+            ("interest_product", "TEXT DEFAULT ''"),
+            ("status_updated_at","TEXT"),
         ]:
-            try: conn.execute(col_def)
-            except: pass
-        conn.execute("UPDATE leads SET status='contacted' WHERE sent=1 AND (status IS NULL OR status='pending')")
+            try:
+                cur.execute(f"ALTER TABLE leads ADD COLUMN {col} {definition}")
+                conn.commit()
+            except Exception: pass
     conn.commit()
     conn.close()
 
@@ -155,7 +186,7 @@ def get_weeks() -> list:
     cur.execute("""
         SELECT w.id, w.week_label, w.created_at,
                COUNT(l.id) AS total_leads,
-               SUM(CASE WHEN l.status IN ('contacted','interested','meeting','closed') THEN 1 ELSE 0 END) AS sent_leads,
+               SUM(CASE WHEN l.sent = 1 THEN 1 ELSE 0 END) AS sent_leads,
                SUM(CASE WHEN l.email IS NOT NULL AND l.email != '' THEN 1 ELSE 0 END) AS email_leads
         FROM weeks w
         LEFT JOIN leads l ON l.week_id = w.id
@@ -165,6 +196,16 @@ def get_weeks() -> list:
     rows = _fetchall(cur)
     conn.close()
     return rows
+
+def get_weekly_lead_count(week_id: int) -> int:
+    ph   = p()
+    conn = _conn()
+    cur  = conn.cursor()
+    cur.execute(f"SELECT COUNT(*) FROM leads WHERE week_id = {ph}", (week_id,))
+    row = cur.fetchone()
+    conn.close()
+    if row is None: return 0
+    return row[0] if not isinstance(row, dict) else list(row.values())[0]
 
 def get_all_business_names() -> list:
     conn = _conn()
@@ -194,8 +235,8 @@ def save_leads(leads: list, week_id: int) -> list:
                 lead.get("state",""), lead.get("website",""),
                 lead.get("priority","medium"), lead.get("reason",""), now)
         sql = f"""INSERT INTO leads (week_id,name,category,email,phone,address,suburb,
-                  state,website,priority,reason,status,notes,sent,created_at)
-                  VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},'pending','',0,{ph})"""
+                  state,website,priority,reason,sent,status,notes,interest_product,created_at)
+                  VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},0,'pending','','',{ph})"""
         if USE_PG:
             cur.execute(sql + " RETURNING id", vals)
             new_id = cur.fetchone()[0]
@@ -204,7 +245,8 @@ def save_leads(leads: list, week_id: int) -> list:
             new_id = cur.lastrowid
         existing_names.add(name.lower())
         if email: existing_emails.add(email)
-        saved.append({**lead, "id": new_id, "week_id": week_id, "status": "pending", "notes": "", "sent": 0})
+        saved.append({**lead, "id": new_id, "week_id": week_id, "sent": 0,
+                      "status": "pending", "notes": "", "interest_product": ""})
     conn.commit()
     conn.close()
     return saved
@@ -236,48 +278,132 @@ def get_all_leads() -> list:
 def get_stats() -> dict:
     conn = _conn()
     cur  = conn.cursor()
-    cur.execute("SELECT COUNT(*) FROM leads");                                           total      = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM leads WHERE status='pending'");                   pending    = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM leads WHERE status='contacted'");                 contacted  = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM leads WHERE status='interested'");                interested = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM leads WHERE status='meeting'");                   meeting    = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM leads WHERE status='closed'");                    closed     = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM leads WHERE status='lost'");                      lost       = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM leads WHERE email IS NOT NULL AND email != ''");  with_email = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM weeks");                                           weeks      = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM leads");                                        total      = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM leads WHERE status = 'pending'");               pending    = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM leads WHERE status = 'contacted'");             contacted  = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM leads WHERE status = 'interested'");            interested = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM leads WHERE status = 'meeting'");               meeting    = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM leads WHERE status = 'closed'");                closed     = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM leads WHERE status = 'lost'");                  lost       = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM leads WHERE email IS NOT NULL AND email != ''");with_email = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM weeks");                                        weeks      = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM leads WHERE sent = 1");                         sent       = cur.fetchone()[0]
+    # Stale leads: pending/contacted but not updated in 7+ days
+    cutoff = (datetime.now() - timedelta(days=7)).isoformat()
+    if USE_PG:
+        cur.execute("""
+            SELECT COUNT(*) FROM leads
+            WHERE status IN ('pending','contacted')
+            AND (status_updated_at IS NULL OR status_updated_at < %s)
+            AND created_at < %s
+        """, (cutoff, cutoff))
+    else:
+        cur.execute("""
+            SELECT COUNT(*) FROM leads
+            WHERE status IN ('pending','contacted')
+            AND (status_updated_at IS NULL OR status_updated_at < ?)
+            AND created_at < ?
+        """, (cutoff, cutoff))
+    stale = cur.fetchone()[0]
     conn.close()
     return {
-        "total": total, "pending": pending, "contacted": contacted,
-        "interested": interested, "meeting": meeting, "closed": closed,
-        "lost": lost, "sent": total - pending, "weeks": weeks, "with_email": with_email,
+        "total": total, "sent": sent, "pending": pending,
+        "contacted": contacted, "interested": interested,
+        "meeting": meeting, "closed": closed, "lost": lost,
+        "weeks": weeks, "with_email": with_email, "stale": stale,
     }
 
-def update_status(lead_id: int, status: str):
-    if status not in STATUS_VALUES:
-        status = 'pending'
-    ph      = p()
-    conn    = _conn()
-    cur     = conn.cursor()
-    sent_val = 0 if status == 'pending' else 1
-    cur.execute(f"UPDATE leads SET status={ph}, sent={ph} WHERE id={ph}", (status, sent_val, lead_id))
-    conn.commit()
+def get_stale_leads(days: int = 7) -> list:
+    """Return leads in pending/contacted that haven't been updated in `days` days."""
+    cutoff = (datetime.now() - timedelta(days=days)).isoformat()
+    conn = _conn()
+    cur  = conn.cursor()
+    if USE_PG:
+        cur.execute("""
+            SELECT l.*, w.week_label FROM leads l
+            JOIN weeks w ON l.week_id = w.id
+            WHERE l.status IN ('pending','contacted')
+            AND (l.status_updated_at IS NULL OR l.status_updated_at < %s)
+            AND l.created_at < %s
+            ORDER BY l.created_at ASC
+        """, (cutoff, cutoff))
+    else:
+        cur.execute("""
+            SELECT l.*, w.week_label FROM leads l
+            JOIN weeks w ON l.week_id = w.id
+            WHERE l.status IN ('pending','contacted')
+            AND (l.status_updated_at IS NULL OR l.status_updated_at < ?)
+            AND l.created_at < ?
+            ORDER BY l.created_at ASC
+        """, (cutoff, cutoff))
+    rows = _fetchall(cur)
     conn.close()
+    return rows
 
-def update_notes(lead_id: int, notes: str):
+def update_status(lead_id: int, status: str, notes: str = None, interest_product: str = None):
+    """Update lead status, optionally notes and interest_product. Records history."""
+    if status not in VALID_STATUSES:
+        return
     ph   = p()
     conn = _conn()
     cur  = conn.cursor()
-    cur.execute(f"UPDATE leads SET notes={ph} WHERE id={ph}", (notes or "", lead_id))
+    now  = datetime.now().isoformat()
+
+    # Get old status for history
+    cur.execute(f"SELECT status FROM leads WHERE id = {ph}", (lead_id,))
+    old_row = _fetchone(cur)
+    old_status = old_row["status"] if old_row else None
+
+    # Build dynamic SET clause
+    set_parts  = [f"status={ph}", f"sent={ph}", f"status_updated_at={ph}"]
+    set_values = [status, 0 if status == "pending" else 1, now]
+
+    if notes is not None:
+        set_parts.append(f"notes={ph}")
+        set_values.append(notes)
+    if interest_product is not None:
+        set_parts.append(f"interest_product={ph}")
+        set_values.append(interest_product)
+
+    sql = f"UPDATE leads SET {', '.join(set_parts)} WHERE id={ph}"
+    cur.execute(sql, (*set_values, lead_id))
+
+    # Record history if status actually changed
+    if old_status != status:
+        cur.execute(
+            f"INSERT INTO status_history (lead_id, old_status, new_status, notes, changed_at) VALUES ({ph},{ph},{ph},{ph},{ph})",
+            (lead_id, old_status, status, notes or "", now)
+        )
+
     conn.commit()
     conn.close()
 
+def get_status_history(lead_id: int) -> list:
+    """Return full status change history for a lead, newest first."""
+    ph   = p()
+    conn = _conn()
+    cur  = conn.cursor()
+    cur.execute(
+        f"SELECT * FROM status_history WHERE lead_id = {ph} ORDER BY changed_at DESC",
+        (lead_id,)
+    )
+    rows = _fetchall(cur)
+    conn.close()
+    return rows
+
 def mark_sent(lead_id: int, sent: bool):
-    update_status(lead_id, 'contacted' if sent else 'pending')
+    ph   = p()
+    conn = _conn()
+    cur  = conn.cursor()
+    cur.execute(f"UPDATE leads SET sent = {ph} WHERE id = {ph}", (1 if sent else 0, lead_id))
+    conn.commit()
+    conn.close()
 
 def delete_lead(lead_id: int):
     ph   = p()
     conn = _conn()
     cur  = conn.cursor()
+    cur.execute(f"DELETE FROM status_history WHERE lead_id = {ph}", (lead_id,))
     cur.execute(f"DELETE FROM leads WHERE id = {ph}", (lead_id,))
     conn.commit()
     conn.close()
@@ -299,6 +425,47 @@ def get_current_week_leads() -> list:
         SELECT * FROM leads WHERE week_id = {ph}
         ORDER BY CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END, name
     """, (week_id,))
+    rows = _fetchall(cur)
+    conn.close()
+    return rows
+
+def get_pipeline_stats_by_category() -> list:
+    """Return pipeline counts grouped by category — for the dashboard chart."""
+    conn = _conn()
+    cur  = conn.cursor()
+    cur.execute("""
+        SELECT category,
+               COUNT(*) AS total,
+               SUM(CASE WHEN status='pending'    THEN 1 ELSE 0 END) AS pending,
+               SUM(CASE WHEN status='contacted'  THEN 1 ELSE 0 END) AS contacted,
+               SUM(CASE WHEN status='interested' THEN 1 ELSE 0 END) AS interested,
+               SUM(CASE WHEN status='meeting'    THEN 1 ELSE 0 END) AS meeting,
+               SUM(CASE WHEN status='closed'     THEN 1 ELSE 0 END) AS closed,
+               SUM(CASE WHEN status='lost'       THEN 1 ELSE 0 END) AS lost
+        FROM leads
+        GROUP BY category
+        ORDER BY total DESC
+    """)
+    rows = _fetchall(cur)
+    conn.close()
+    return rows
+
+def get_weekly_evolution() -> list:
+    """Return per-week totals and closed count — for the evolution chart."""
+    conn = _conn()
+    cur  = conn.cursor()
+    cur.execute("""
+        SELECT w.week_label,
+               COUNT(l.id)                                           AS total,
+               SUM(CASE WHEN l.status='closed' THEN 1 ELSE 0 END)   AS closed,
+               SUM(CASE WHEN l.status='lost'   THEN 1 ELSE 0 END)   AS lost,
+               SUM(CASE WHEN l.email IS NOT NULL AND l.email != '' THEN 1 ELSE 0 END) AS with_email
+        FROM weeks w
+        LEFT JOIN leads l ON l.week_id = w.id
+        GROUP BY w.id, w.week_label, w.created_at
+        ORDER BY w.created_at ASC
+        LIMIT 12
+    """)
     rows = _fetchall(cur)
     conn.close()
     return rows
