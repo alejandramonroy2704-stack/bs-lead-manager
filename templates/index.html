@@ -4,21 +4,36 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BS Weekly Lead Manager</title>
+<!-- Chart.js for dashboard (Fase 4) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- Leaflet for map (Fase 5) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --orange: #e85d04; --orange-dark: #c94e03; --orange-light: #fff1e6;
-    --black: #111; --gold: #c9a84c;
-    --bg: #f0f2f5; --card: #fff; --border: #e0e0e0;
-    --text: #1a1a1a; --muted: #6b7280;
-    --green: #16a34a; --red: #dc2626; --blue: #2563eb;
-    --purple: #7c3aed; --amber: #d97706;
-    --radius: 10px; --shadow: 0 1px 4px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+    --orange: #e85d04;
+    --orange-dark: #c94e03;
+    --orange-light: #fff1e6;
+    --black: #111;
+    --gold: #c9a84c;
+    --bg: #f0f2f5;
+    --card: #fff;
+    --border: #e0e0e0;
+    --text: #1a1a1a;
+    --muted: #6b7280;
+    --green: #16a34a;
+    --red: #dc2626;
+    --blue: #2563eb;
+    --purple: #7c3aed;
+    --amber: #d97706;
+    --radius: 10px;
+    --shadow: 0 1px 4px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
   }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
          background: var(--bg); color: var(--text); min-height: 100vh; }
 
-  /* Header */
+  /* ── Header ── */
   header {
     background: var(--black); color: #fff; padding: 0 24px;
     display: flex; align-items: center; justify-content: space-between;
@@ -31,27 +46,68 @@
                justify-content: center; font-weight: 900; font-size: 18px; }
   .logo h1 { font-size: 18px; font-weight: 700; letter-spacing: -.3px; }
   .logo span { color: var(--orange); }
+  .header-right { display: flex; gap: 8px; }
 
-  /* Stats bar */
-  .stats-bar { display: flex; gap: 10px; padding: 16px 24px; flex-wrap: wrap; }
+  /* ── Main nav tabs (Leads / Dashboard / Map) ── */
+  .main-nav {
+    display: flex; gap: 0; padding: 0 24px;
+    background: var(--black); border-bottom: 2px solid #222;
+  }
+  .main-nav-btn {
+    padding: 10px 20px; font-size: 13px; font-weight: 700; color: #9ca3af;
+    background: none; border: none; cursor: pointer;
+    border-bottom: 3px solid transparent; margin-bottom: -2px;
+    transition: color .15s, border-color .15s;
+  }
+  .main-nav-btn:hover { color: #fff; }
+  .main-nav-btn.active { color: var(--orange); border-color: var(--orange); }
+
+  /* ── Main sections ── */
+  .main-section { display: none; }
+  .main-section.active { display: block; }
+
+  /* ── Stale alert banner (Fase 2) ── */
+  .stale-banner {
+    margin: 12px 24px 0;
+    background: #fef3c7; border: 1.5px solid #fbbf24; border-radius: var(--radius);
+    padding: 12px 16px; display: none; align-items: center; gap: 12px;
+    font-size: 13px; font-weight: 600;
+  }
+  .stale-banner.show { display: flex; }
+  .stale-banner a { color: var(--amber); text-decoration: underline; cursor: pointer; }
+
+  /* ── Stats bar ── */
+  .stats-bar {
+    display: flex; gap: 12px; padding: 16px 24px; flex-wrap: wrap;
+  }
   .stat-card {
     background: var(--card); border-radius: var(--radius);
-    padding: 12px 16px; flex: 1; min-width: 100px;
+    padding: 14px 20px; flex: 1; min-width: 110px;
     box-shadow: var(--shadow); border-left: 4px solid var(--orange);
-    transition: transform .15s;
+    transition: transform .15s; cursor: pointer;
   }
   .stat-card:hover { transform: translateY(-2px); }
-  .stat-card.s-pending    { border-color: var(--muted); }
-  .stat-card.s-contacted  { border-color: var(--orange); }
-  .stat-card.s-interested { border-color: var(--blue); }
-  .stat-card.s-meeting    { border-color: var(--purple); }
-  .stat-card.s-closed     { border-color: var(--green); }
-  .stat-card.s-email      { border-color: var(--gold); }
-  .stat-label { font-size: 10px; font-weight: 600; color: var(--muted);
+  .stat-card.active-filter { box-shadow: 0 0 0 2px var(--orange); }
+  .stat-card.sc-pending    { border-color: var(--amber); }
+  .stat-card.sc-pending.active-filter { box-shadow: 0 0 0 2px var(--amber); }
+  .stat-card.sc-contacted  { border-color: var(--blue); }
+  .stat-card.sc-contacted.active-filter { box-shadow: 0 0 0 2px var(--blue); }
+  .stat-card.sc-interested { border-color: var(--purple); }
+  .stat-card.sc-interested.active-filter { box-shadow: 0 0 0 2px var(--purple); }
+  .stat-card.sc-meeting    { border-color: #0891b2; }
+  .stat-card.sc-meeting.active-filter { box-shadow: 0 0 0 2px #0891b2; }
+  .stat-card.sc-closed     { border-color: var(--green); }
+  .stat-card.sc-closed.active-filter { box-shadow: 0 0 0 2px var(--green); }
+  .stat-card.sc-email      { border-color: #9ca3af; }
+  .stat-card.sc-stale      { border-color: var(--amber); cursor: pointer; }
+  .stat-card.sc-stale:hover { transform: translateY(-2px); }
+  .stat-label { font-size: 11px; font-weight: 600; color: var(--muted);
                 text-transform: uppercase; letter-spacing: .6px; }
-  .stat-value { font-size: 26px; font-weight: 800; line-height: 1.1; margin-top: 4px; }
+  .stat-value { font-size: 26px; font-weight: 800; line-height: 1.1;
+                margin-top: 4px; }
+  .stat-value.stale-warn { color: var(--amber); }
 
-  /* Generate panel */
+  /* ── Generate panel ── */
   .generate-panel {
     margin: 0 24px 16px;
     background: var(--card); border-radius: var(--radius);
@@ -71,15 +127,20 @@
   .chevron.open { transform: rotate(180deg); }
   .panel-body { padding: 20px; display: none; }
   .panel-body.open { display: block; }
+
   .form-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
   .form-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 140px; }
   .form-group label { font-size: 12px; font-weight: 600; color: var(--muted);
                       text-transform: uppercase; letter-spacing: .5px; }
   .form-group select, .form-group input {
     padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 7px;
-    font-size: 14px; font-family: inherit; background: #fff; transition: border-color .15s;
+    font-size: 14px; font-family: inherit; background: #fff;
+    transition: border-color .15s;
   }
-  .form-group select:focus, .form-group input:focus { outline: none; border-color: var(--orange); }
+  .form-group select:focus, .form-group input:focus {
+    outline: none; border-color: var(--orange);
+  }
+
   .btn-generate {
     background: var(--orange); color: #fff; border: none;
     padding: 12px 28px; border-radius: 8px; font-size: 15px; font-weight: 700;
@@ -94,54 +155,11 @@
              border-radius: 50%; animation: spin .7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Search bar */
-  .search-wrap { margin: 0 24px 14px; }
-  .search-bar {
-    display: flex; align-items: center; gap: 10px;
-    background: var(--card); border-radius: var(--radius);
-    padding: 10px 16px; box-shadow: var(--shadow);
-    border: 1.5px solid var(--border); transition: border-color .2s;
+  /* ── Toolbar ── */
+  .toolbar {
+    margin: 0 24px 16px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
   }
-  .search-bar:focus-within { border-color: var(--orange); }
-  .search-bar .search-icon { font-size: 16px; color: var(--muted); flex-shrink: 0; }
-  .search-bar input {
-    flex: 1; border: none; outline: none; font-size: 14px;
-    font-family: inherit; background: transparent; color: var(--text);
-  }
-  .search-bar input::placeholder { color: var(--muted); }
-  .search-clear {
-    background: none; border: none; cursor: pointer; color: var(--muted);
-    font-size: 20px; padding: 0; line-height: 1; display: none;
-  }
-  .search-clear:hover { color: var(--red); }
-  .search-clear.visible { display: block; }
-
-  /* Toolbar */
-  .toolbar { margin: 0 24px 16px; display: flex; align-items: flex-start;
-             justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-  .toolbar-left { display: flex; flex-direction: column; gap: 8px; flex: 1; }
-
-  /* Pipeline filter */
-  .pipeline-filter { display: flex; gap: 6px; flex-wrap: wrap; }
-  .pf-btn {
-    padding: 6px 13px; border-radius: 20px; font-size: 12px; font-weight: 600;
-    cursor: pointer; border: 1.5px solid var(--border); background: #fff;
-    transition: all .15s; color: var(--muted); display: flex; align-items: center; gap: 4px;
-  }
-  .pf-btn:hover { opacity: .85; transform: translateY(-1px); }
-  .pf-btn .pf-count { background: var(--bg); padding: 1px 5px;
-                      border-radius: 10px; font-size: 10px; }
-  .pf-btn.active .pf-count { background: rgba(255,255,255,.25); }
-  .pf-btn.active { color: #fff; }
-  .pf-btn[data-s="all"].active       { background: var(--black); border-color: var(--black); }
-  .pf-btn[data-s="pending"].active   { background: var(--muted); border-color: var(--muted); }
-  .pf-btn[data-s="contacted"].active { background: var(--orange); border-color: var(--orange); }
-  .pf-btn[data-s="interested"].active{ background: var(--blue); border-color: var(--blue); }
-  .pf-btn[data-s="meeting"].active   { background: var(--purple); border-color: var(--purple); }
-  .pf-btn[data-s="closed"].active    { background: var(--green); border-color: var(--green); }
-  .pf-btn[data-s="lost"].active      { background: var(--red); border-color: var(--red); }
-
-  /* Category tabs */
   .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
   .tab {
     padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;
@@ -154,7 +172,6 @@
                     border-radius: 10px; font-size: 11px; margin-left: 4px; }
   .tab:not(.active) .tab-count { background: var(--bg); color: var(--muted); }
 
-  /* Export buttons */
   .export-bar { display: flex; gap: 8px; flex-wrap: wrap; }
   .btn-export {
     padding: 7px 14px; border-radius: 7px; font-size: 13px; font-weight: 600;
@@ -167,13 +184,14 @@
   .btn-export.csv   { color: var(--muted); border-color: var(--border); background: #fff; }
   .btn-export.csv:hover   { background: var(--muted); color: #fff; }
 
-  /* Lead cards */
+  /* ── Lead cards grid ── */
   .leads-section { padding: 0 24px; }
   .leads-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 16px; margin-bottom: 16px;
   }
+
   .lead-card {
     background: var(--card); border-radius: var(--radius);
     box-shadow: var(--shadow); overflow: hidden;
@@ -181,14 +199,17 @@
     border: 1.5px solid var(--border);
   }
   .lead-card:hover { transform: translateY(-3px); box-shadow: 0 6px 24px rgba(0,0,0,.1); }
-  .lead-card.is-closed { opacity: .6; }
+  .lead-card.stale-card { border-color: #fbbf24; }
 
   .card-top {
-    padding: 12px 16px 10px;
+    padding: 14px 16px 10px;
     border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
   }
-  .card-badges { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .card-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+  .stale-indicator { font-size: 11px; font-weight: 700; color: #92400e;
+                     background: #fef3c7; padding: 3px 7px; border-radius: 10px;
+                     flex-shrink: 0; }
   .badge {
     font-size: 10px; font-weight: 700; padding: 3px 8px;
     border-radius: 12px; text-transform: uppercase; letter-spacing: .5px;
@@ -202,70 +223,113 @@
   .badge-catering   { background: #f0fdf4; color: #15803d; }
   .badge-foodtruck  { background: #fffbeb; color: #b45309; }
 
-  /* Status select */
-  .status-select {
-    border: 1.5px solid var(--border); border-radius: 7px;
-    padding: 5px 8px; font-size: 12px; font-weight: 600;
-    cursor: pointer; font-family: inherit; background: #fff;
-    transition: border-color .15s; color: var(--muted); flex-shrink: 0;
-  }
-  .status-select:focus { outline: none; }
-
-  .card-body { padding: 12px 16px; }
+  .card-body { padding: 14px 16px; }
   .biz-name { font-size: 16px; font-weight: 800; line-height: 1.2;
               margin-bottom: 10px; color: var(--black); }
+  .biz-name.sent-name { text-decoration: line-through; color: var(--muted); }
+
   .contact-row { display: flex; align-items: flex-start; gap: 8px;
                  font-size: 13px; margin-bottom: 6px; color: var(--text); }
   .contact-row .ci { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
   .contact-row a { color: var(--orange); text-decoration: none; }
   .contact-row a:hover { text-decoration: underline; }
+
   .reason-text {
     font-size: 12px; color: var(--muted); font-style: italic;
     background: var(--bg); padding: 8px 10px; border-radius: 6px;
     margin-top: 10px; line-height: 1.5;
   }
 
-  /* Notes section */
-  .notes-section {
-    border-top: 1px solid var(--border); padding: 10px 16px;
-  }
-  .notes-label {
-    font-size: 10px; font-weight: 700; color: var(--muted);
-    text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px;
-    display: flex; align-items: center; gap: 5px;
-  }
-  .notes-input {
-    width: 100%; border: 1.5px solid var(--border); border-radius: 7px;
-    padding: 8px 10px; font-size: 12px; font-family: inherit;
-    resize: vertical; min-height: 56px; color: var(--text);
+  /* ── Interest/Product field (Fase 2) ── */
+  .interest-row { margin-top: 10px; }
+  .interest-row label { font-size: 11px; font-weight: 600; color: var(--muted);
+                        text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 4px; }
+  .interest-input {
+    width: 100%; padding: 7px 10px; border: 1.5px solid var(--border);
+    border-radius: 7px; font-size: 12px; font-family: inherit;
     background: var(--bg); transition: border-color .15s;
-    line-height: 1.5;
   }
-  .notes-input:focus { outline: none; border-color: var(--orange); background: #fff; }
-  .notes-input::placeholder { color: var(--muted); font-style: italic; }
+  .interest-input:focus { outline: none; border-color: var(--purple); background: #fff; }
 
-  .card-actions { padding: 10px 16px 14px; display: flex; gap: 8px; }
-  .btn-delete {
-    flex: 0; padding: 8px 12px; border-radius: 7px; font-size: 12px;
-    font-weight: 700; cursor: pointer; border: 1.5px solid #fecaca;
-    color: var(--red); background: #fff5f5; transition: all .15s;
+  /* ── Notes field on card ── */
+  .notes-field {
+    width: 100%; margin-top: 8px; padding: 8px 10px;
+    border: 1.5px solid var(--border); border-radius: 7px;
+    font-size: 12px; font-family: inherit; resize: vertical;
+    min-height: 56px; color: var(--text); background: var(--bg);
+    transition: border-color .15s;
   }
+  .notes-field:focus { outline: none; border-color: var(--orange); background: #fff; }
+  .notes-label { font-size: 11px; font-weight: 600; color: var(--muted);
+                 text-transform: uppercase; letter-spacing: .5px; margin-top: 10px;
+                 display: block; }
+
+  .card-actions {
+    padding: 10px 16px 14px;
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .btn-action {
+    padding: 7px 10px; border-radius: 7px; font-size: 11px;
+    font-weight: 700; cursor: pointer; border: 1.5px solid;
+    transition: all .15s; display: flex; align-items: center;
+    justify-content: center; gap: 4px;
+  }
+  .btn-history { color: var(--purple); border-color: #ddd6fe; background: #f5f3ff; flex: 1; }
+  .btn-history:hover { background: var(--purple); color: #fff; border-color: var(--purple); }
+  .btn-email   { color: var(--blue); border-color: #bfdbfe; background: #eff6ff; flex: 1; }
+  .btn-email:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .btn-delete  { color: var(--red); border-color: #fecaca; background: #fff5f5; flex: 0; padding: 7px 11px; }
   .btn-delete:hover { background: var(--red); color: #fff; border-color: var(--red); }
-  .card-action-info { flex: 1; font-size: 11px; color: var(--muted);
-                      display: flex; align-items: center; }
 
-  /* Empty state */
-  .empty-state { text-align: center; padding: 60px 24px; color: var(--muted); }
-  .empty-icon  { font-size: 56px; margin-bottom: 16px; }
+  /* ── Status dropdown on card ── */
+  .status-select {
+    padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: 700;
+    border: 1.5px solid; cursor: pointer; outline: none;
+    background: #fff; appearance: none; -webkit-appearance: none;
+    padding-right: 24px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 8px center;
+    flex: 1;
+  }
+  .ss-pending    { border-color: var(--amber);  color: #92400e; background-color: #fffbeb; }
+  .ss-contacted  { border-color: var(--blue);   color: #1e40af; background-color: #eff6ff; }
+  .ss-interested { border-color: var(--purple); color: #5b21b6; background-color: #f5f3ff; }
+  .ss-meeting    { border-color: #0891b2;        color: #164e63; background-color: #ecfeff; }
+  .ss-closed     { border-color: var(--green);  color: #14532d; background-color: #f0fdf4; }
+  .ss-lost       { border-color: #9ca3af;        color: #374151; background-color: #f9fafb; }
+
+  /* ── Status filter pills ── */
+  .status-filter { display: flex; gap: 6px; flex-wrap: wrap; }
+  .sf-btn {
+    padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: 1.5px solid var(--border); background: #fff;
+    transition: all .15s; color: var(--muted);
+  }
+  .sf-btn:hover { border-color: var(--orange); color: var(--orange); }
+  .sf-btn.active { color: #fff; border-color: transparent; }
+  .sf-btn[data-status="all"].active       { background: #111; }
+  .sf-btn[data-status="pending"].active   { background: var(--amber); }
+  .sf-btn[data-status="contacted"].active { background: var(--blue); }
+  .sf-btn[data-status="interested"].active{ background: var(--purple); }
+  .sf-btn[data-status="meeting"].active   { background: #0891b2; }
+  .sf-btn[data-status="closed"].active    { background: var(--green); }
+  .sf-btn[data-status="lost"].active      { background: #6b7280; }
+
+  /* ── Empty state ── */
+  .empty-state {
+    text-align: center; padding: 60px 24px; color: var(--muted);
+  }
+  .empty-icon { font-size: 56px; margin-bottom: 16px; }
   .empty-state h2 { font-size: 20px; color: var(--text); margin-bottom: 8px; }
   .empty-state p  { font-size: 14px; max-width: 380px; margin: 0 auto 24px; }
 
-  /* History */
+  /* ── History section ── */
   .history-section { margin: 8px 24px 40px; }
   .history-title {
     font-size: 15px; font-weight: 700; color: var(--muted);
     text-transform: uppercase; letter-spacing: .7px;
-    margin-bottom: 10px; padding-top: 8px; border-top: 1px solid var(--border);
+    margin-bottom: 10px; padding-top: 8px;
+    border-top: 1px solid var(--border);
   }
   details.week-block {
     background: var(--card); border-radius: var(--radius);
@@ -279,22 +343,24 @@
   }
   details.week-block summary:hover { background: var(--orange-light); }
   details.week-block summary::-webkit-details-marker { display: none; }
-  .week-meta { display: flex; align-items: center; gap: 10px; }
+  .week-meta { display: flex; align-items: center; gap: 12px; }
   .week-pill { font-size: 11px; font-weight: 600; padding: 3px 8px;
                border-radius: 12px; background: var(--bg); color: var(--muted); }
   .week-pill.good { background: #f0fdf4; color: var(--green); }
+  .week-actions { display: flex; gap: 6px; }
   .week-detail-body { padding: 4px 18px 14px; }
   .mini-lead-row {
-    display: flex; align-items: center; padding: 7px 0;
-    border-bottom: 1px solid var(--border); font-size: 13px; gap: 8px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px;
+    gap: 8px;
   }
   .mini-lead-row:last-child { border-bottom: none; }
-  .mini-name  { font-weight: 600; flex: 2; }
+  .mini-name { font-weight: 600; flex: 2; }
   .mini-email { color: var(--muted); flex: 2; font-size: 12px; }
   .mini-cat   { flex: 1; }
-  .mini-status { flex: 1; }
+  .mini-prio  { flex: 0; }
 
-  /* Toast */
+  /* ── Toast ── */
   #toast {
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
     background: var(--black); color: #fff; padding: 12px 24px;
@@ -306,7 +372,7 @@
   #toast.success { background: var(--green); }
   #toast.error   { background: var(--red); }
 
-  /* Loading overlay */
+  /* ── Loading overlay ── */
   #loading-overlay {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
     z-index: 200; align-items: center; justify-content: center;
@@ -314,7 +380,8 @@
   #loading-overlay.show { display: flex; }
   .loading-box {
     background: var(--card); border-radius: 14px; padding: 32px 40px;
-    text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.3); max-width: 320px;
+    text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.3);
+    max-width: 320px;
   }
   .loading-box .big-spinner {
     width: 48px; height: 48px; border: 4px solid var(--border);
@@ -324,17 +391,115 @@
   .loading-box h3 { font-size: 17px; margin-bottom: 6px; }
   .loading-box p  { font-size: 13px; color: var(--muted); }
 
+  /* ── MODAL base (Fase 2 / 3) ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5);
+    z-index: 500; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-box {
+    background: var(--card); border-radius: 14px; padding: 24px;
+    width: 100%; max-width: 540px; max-height: 85vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .modal-title { font-size: 16px; font-weight: 800; }
+  .modal-close {
+    background: none; border: none; font-size: 20px; cursor: pointer;
+    color: var(--muted); line-height: 1; padding: 4px;
+  }
+  .modal-close:hover { color: var(--red); }
+
+  /* ── Status history timeline (Fase 2) ── */
+  .history-timeline { list-style: none; }
+  .history-item {
+    display: flex; gap: 12px; padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--orange); flex-shrink: 0; margin-top: 5px;
+  }
+  .history-info { flex: 1; }
+  .history-status { font-size: 13px; font-weight: 700; }
+  .history-time   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .history-notes  { font-size: 12px; color: var(--text); margin-top: 4px;
+                    background: var(--bg); padding: 6px 8px; border-radius: 6px; }
+
+  /* ── Email template modal (Fase 3) ── */
+  .email-preview {
+    background: #f8fafc; border: 1.5px solid var(--border); border-radius: 8px;
+    padding: 16px; font-size: 13px; line-height: 1.6; white-space: pre-wrap;
+    max-height: 320px; overflow-y: auto; font-family: inherit;
+  }
+  .email-subject-row {
+    background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 7px;
+    padding: 8px 12px; margin-bottom: 10px; font-size: 13px; font-weight: 700;
+    color: #1e40af;
+  }
+  .btn-copy-email {
+    margin-top: 12px; width: 100%; padding: 11px; border-radius: 8px;
+    background: var(--blue); color: #fff; border: none; font-size: 14px;
+    font-weight: 700; cursor: pointer; transition: background .15s;
+  }
+  .btn-copy-email:hover { background: #1d4ed8; }
+  .btn-copy-email.copied { background: var(--green); }
+
+  /* ── DASHBOARD section (Fase 4) ── */
+  .dashboard-section { padding: 20px 24px 40px; }
+  .dash-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  @media (max-width: 768px) { .dash-row { grid-template-columns: 1fr; } }
+  .dash-card {
+    background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 20px;
+  }
+  .dash-card-title { font-size: 14px; font-weight: 700; color: var(--muted);
+                     text-transform: uppercase; letter-spacing: .6px; margin-bottom: 16px; }
+  .dash-chart-wrap { position: relative; height: 240px; }
+  .dash-kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .kpi-tile {
+    background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 16px; text-align: center;
+  }
+  .kpi-value { font-size: 28px; font-weight: 900; color: var(--orange); }
+  .kpi-label { font-size: 11px; font-weight: 600; color: var(--muted);
+               text-transform: uppercase; letter-spacing: .5px; margin-top: 4px; }
+
+  /* ── MAP section (Fase 5) ── */
+  .map-section { padding: 20px 24px 40px; }
+  .map-header { display: flex; align-items: center; justify-content: space-between;
+                margin-bottom: 14px; }
+  .map-header h2 { font-size: 17px; font-weight: 800; }
+  #leads-map {
+    width: 100%; height: 560px; border-radius: var(--radius);
+    box-shadow: var(--shadow); border: 1.5px solid var(--border);
+    z-index: 1;
+  }
+  .map-legend {
+    margin-top: 12px; display: flex; gap: 16px; flex-wrap: wrap;
+    font-size: 12px; font-weight: 600;
+  }
+  .legend-dot {
+    width: 12px; height: 12px; border-radius: 50%; display: inline-block;
+    margin-right: 5px; vertical-align: middle;
+  }
+
   @media (max-width: 640px) {
     .stats-bar { padding: 12px; gap: 8px; }
-    .stat-value { font-size: 20px; }
+    .stat-value { font-size: 22px; }
     .generate-panel, .toolbar, .leads-section, .history-section,
-    .search-wrap { margin-left: 12px; margin-right: 12px; }
+    .dashboard-section, .map-section { margin-left: 12px; margin-right: 12px; }
     .form-row { flex-direction: column; }
   }
 </style>
 </head>
 <body>
 
+<!-- Loading overlay -->
 <div id="loading-overlay">
   <div class="loading-box">
     <div class="big-spinner"></div>
@@ -343,199 +508,311 @@
   </div>
 </div>
 
+<!-- Toast -->
 <div id="toast"></div>
 
+<!-- Status History Modal (Fase 2) -->
+<div class="modal-overlay" id="history-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="history-modal-title">Status History</div>
+      <button class="modal-close" onclick="closeHistoryModal()">✕</button>
+    </div>
+    <ul class="history-timeline" id="history-timeline"></ul>
+  </div>
+</div>
+
+<!-- Email Template Modal (Fase 3) -->
+<div class="modal-overlay" id="email-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">📧 Email Template</div>
+      <button class="modal-close" onclick="closeEmailModal()">✕</button>
+    </div>
+    <div class="email-subject-row" id="email-subject">Subject: ...</div>
+    <div class="email-preview" id="email-body"></div>
+    <button class="btn-copy-email" id="btn-copy-email" onclick="copyEmail()">
+      📋 Copy to Clipboard
+    </button>
+  </div>
+</div>
+
+<!-- Header -->
 <header>
   <div class="logo">
     <div class="logo-icon">B</div>
     <h1><span>BS</span> Weekly Lead Manager</h1>
   </div>
-  <div style="display:flex; align-items:center; gap:16px;">
+  <div class="header-right" style="display:flex; align-items:center; gap:16px;">
     <span style="color:#9ca3af; font-size:13px;">B+S Commercial Kitchens &nbsp;•&nbsp; Australia</span>
     <a href="/logout" style="color:#9ca3af; font-size:13px; text-decoration:none;
-       border:1px solid #444; padding:5px 12px; border-radius:6px;">🔓 Salir</a>
+       border:1px solid #444; padding:5px 12px; border-radius:6px;">
+      🔓 Salir
+    </a>
   </div>
 </header>
 
-<!-- Stats bar -->
-<div class="stats-bar">
-  <div class="stat-card">
-    <div class="stat-label">Total Leads</div>
-    <div class="stat-value" id="stat-total">—</div>
-  </div>
-  <div class="stat-card s-pending">
-    <div class="stat-label">⏳ Pending</div>
-    <div class="stat-value" id="stat-pending">—</div>
-  </div>
-  <div class="stat-card s-contacted">
-    <div class="stat-label">📤 Contacted</div>
-    <div class="stat-value" id="stat-contacted">—</div>
-  </div>
-  <div class="stat-card s-interested">
-    <div class="stat-label">💡 Interested</div>
-    <div class="stat-value" id="stat-interested">—</div>
-  </div>
-  <div class="stat-card s-meeting">
-    <div class="stat-label">📅 Meeting</div>
-    <div class="stat-value" id="stat-meeting">—</div>
-  </div>
-  <div class="stat-card s-closed">
-    <div class="stat-label">✅ Closed</div>
-    <div class="stat-value" id="stat-closed">—</div>
-  </div>
-  <div class="stat-card s-email">
-    <div class="stat-label">With Email</div>
-    <div class="stat-value" id="stat-email">—</div>
-  </div>
-</div>
+<!-- Main navigation -->
+<nav class="main-nav">
+  <button class="main-nav-btn active" data-sec="leads" onclick="switchSection('leads')">🏠 Leads</button>
+  <button class="main-nav-btn" data-sec="dashboard" onclick="switchSection('dashboard')">📊 Dashboard</button>
+  <button class="main-nav-btn" data-sec="map" onclick="switchSection('map')">🗺️ Map</button>
+</nav>
 
-<!-- Generate panel -->
-<div class="generate-panel">
-  <div class="panel-header" id="panel-toggle">
-    <div class="panel-title">
-      <span class="icon">🚀</span> Generate New Leads
-    </div>
-    <span class="chevron open" id="chevron">▼</span>
-  </div>
-  <div class="panel-body open" id="panel-body">
-    <div class="form-row">
-      <div class="form-group">
-        <label>State</label>
-        <select id="sel-state">
-          <option>Victoria</option>
-          <option>New South Wales</option>
-          <option>Queensland</option>
-          <option>Western Australia</option>
-          <option>South Australia</option>
-          <option>Tasmania</option>
-          <option>Australian Capital Territory</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>City / Suburb</label>
-        <select id="inp-city">
-          <option value="">— All cities —</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Category</label>
-        <select id="sel-category">
-          <option value="all">All Categories</option>
-          <option value="restaurant">Restaurants</option>
-          <option value="hotel">Hotels</option>
-          <option value="casino">Casinos</option>
-          <option value="catering">Catering</option>
-          <option value="foodtruck">Food Trucks</option>
-        </select>
-      </div>
-      <div class="form-group" style="max-width:110px;">
-        <label>Quantity</label>
-        <input type="number" id="inp-qty" value="20" min="5" max="50">
-      </div>
-    </div>
-    <button class="btn-generate" id="btn-generate" onclick="generateLeads()">
-      <span>🔍</span> Generate Leads
-    </button>
-    <span id="gen-status" style="margin-left:14px; font-size:13px; color:var(--muted);"></span>
-  </div>
-</div>
+<!-- ═══════════════════════ LEADS SECTION ═══════════════════════ -->
+<div class="main-section active" id="sec-leads">
 
-<!-- Search bar -->
-<div class="search-wrap">
-  <div class="search-bar">
-    <span class="search-icon">🔍</span>
-    <input type="text" id="search-input" placeholder="Search by name, email, suburb, phone..."
-           oninput="onSearch(this.value)">
-    <button class="search-clear" id="search-clear" onclick="clearSearch()">×</button>
+  <!-- Stale alert banner (Fase 2) -->
+  <div class="stale-banner" id="stale-banner">
+    ⚠️ <strong id="stale-count-banner">0</strong> leads haven't been updated in 7+ days.
+    <a onclick="setStatusFilter('pending'); document.getElementById('stale-banner').style.display='none'">Review them</a>
   </div>
-</div>
 
-<!-- Toolbar -->
-<div class="toolbar">
-  <div class="toolbar-left">
-    <!-- Pipeline filter -->
-    <div class="pipeline-filter" id="pipeline-filter">
-      <button class="pf-btn active" data-s="all"        onclick="setStatusFilter('all')">
-        All <span class="pf-count" id="pfc-all">0</span>
-      </button>
-      <button class="pf-btn" data-s="pending"    onclick="setStatusFilter('pending')">
-        ⏳ Pending <span class="pf-count" id="pfc-pending">0</span>
-      </button>
-      <button class="pf-btn" data-s="contacted"  onclick="setStatusFilter('contacted')">
-        📤 Contacted <span class="pf-count" id="pfc-contacted">0</span>
-      </button>
-      <button class="pf-btn" data-s="interested" onclick="setStatusFilter('interested')">
-        💡 Interested <span class="pf-count" id="pfc-interested">0</span>
-      </button>
-      <button class="pf-btn" data-s="meeting"    onclick="setStatusFilter('meeting')">
-        📅 Meeting <span class="pf-count" id="pfc-meeting">0</span>
-      </button>
-      <button class="pf-btn" data-s="closed"     onclick="setStatusFilter('closed')">
-        ✅ Closed <span class="pf-count" id="pfc-closed">0</span>
-      </button>
-      <button class="pf-btn" data-s="lost"       onclick="setStatusFilter('lost')">
-        ❌ Lost <span class="pf-count" id="pfc-lost">0</span>
-      </button>
+  <!-- Stats bar -->
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat-card" onclick="setStatusFilter('all')" id="sc-total">
+      <div class="stat-label">Total Leads</div>
+      <div class="stat-value" id="stat-total">—</div>
     </div>
-    <!-- Category tabs -->
-    <div class="tabs" id="cat-tabs">
-      <div class="tab active" data-cat="all"        onclick="switchTab('all')">
-        All <span class="tab-count" id="count-all">0</span>
-      </div>
-      <div class="tab" data-cat="restaurant"  onclick="switchTab('restaurant')">
-        Restaurants <span class="tab-count" id="count-restaurant">0</span>
-      </div>
-      <div class="tab" data-cat="hotel"       onclick="switchTab('hotel')">
-        Hotels <span class="tab-count" id="count-hotel">0</span>
-      </div>
-      <div class="tab" data-cat="casino"      onclick="switchTab('casino')">
-        Casinos <span class="tab-count" id="count-casino">0</span>
-      </div>
-      <div class="tab" data-cat="catering"    onclick="switchTab('catering')">
-        Catering <span class="tab-count" id="count-catering">0</span>
-      </div>
-      <div class="tab" data-cat="foodtruck"   onclick="switchTab('foodtruck')">
-        Food Trucks <span class="tab-count" id="count-foodtruck">0</span>
-      </div>
+    <div class="stat-card sc-pending" onclick="setStatusFilter('pending')" id="sc-pending">
+      <div class="stat-label">⏳ Pending</div>
+      <div class="stat-value" id="stat-pending">—</div>
+    </div>
+    <div class="stat-card sc-contacted" onclick="setStatusFilter('contacted')" id="sc-contacted">
+      <div class="stat-label">📢 Contacted</div>
+      <div class="stat-value" id="stat-contacted">—</div>
+    </div>
+    <div class="stat-card sc-interested" onclick="setStatusFilter('interested')" id="sc-interested">
+      <div class="stat-label">💡 Interested</div>
+      <div class="stat-value" id="stat-interested">—</div>
+    </div>
+    <div class="stat-card sc-meeting" onclick="setStatusFilter('meeting')" id="sc-meeting">
+      <div class="stat-label">📅 Meeting</div>
+      <div class="stat-value" id="stat-meeting">—</div>
+    </div>
+    <div class="stat-card sc-closed" onclick="setStatusFilter('closed')" id="sc-closed">
+      <div class="stat-label">✅ Closed</div>
+      <div class="stat-value" id="stat-closed">—</div>
+    </div>
+    <div class="stat-card sc-email">
+      <div class="stat-label">With Email</div>
+      <div class="stat-value" id="stat-email">—</div>
+    </div>
+    <div class="stat-card sc-stale" onclick="showStaleLeads()" title="Click to filter stale leads">
+      <div class="stat-label">🕐 Stale (&gt;7d)</div>
+      <div class="stat-value stale-warn" id="stat-stale">—</div>
     </div>
   </div>
-  <div class="export-bar">
-    <button class="btn-export week" onclick="exportWeek()">⬇ Week Excel</button>
-    <button class="btn-export all"  onclick="exportAll()">⬇ All Excel</button>
-    <button class="btn-export csv"  onclick="exportCsv()">⬇ CSV</button>
+
+  <!-- Generate panel -->
+  <div class="generate-panel">
+    <div class="panel-header" id="panel-toggle">
+      <div class="panel-title">
+        <span class="icon">🚀</span>
+        Generate New Leads
+      </div>
+      <span class="chevron open" id="chevron">▼</span>
+    </div>
+    <div class="panel-body open" id="panel-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>State</label>
+          <select id="sel-state">
+            <option>Victoria</option>
+            <option>New South Wales</option>
+            <option>Queensland</option>
+            <option>Western Australia</option>
+            <option>South Australia</option>
+            <option>Tasmania</option>
+            <option>Australian Capital Territory</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>City / Suburb</label>
+          <select id="inp-city">
+            <option value="">— All cities —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="sel-category">
+            <option value="all">All Categories</option>
+            <option value="restaurant">Restaurants</option>
+            <option value="hotel">Hotels</option>
+            <option value="casino">Casinos</option>
+            <option value="catering">Catering</option>
+            <option value="foodtruck">Food Trucks</option>
+          </select>
+        </div>
+        <div class="form-group" style="max-width:120px;">
+          <label>Quantity (max 200)</label>
+          <input type="number" id="inp-qty" value="20" min="5" max="200">
+        </div>
+      </div>
+      <button class="btn-generate" id="btn-generate" onclick="generateLeads()">
+        <span>🔍</span> Generate Leads
+      </button>
+      <span id="gen-status" style="margin-left:14px; font-size:13px; color:var(--muted);"></span>
+    </div>
   </div>
-</div>
 
-<!-- Lead cards -->
-<div class="leads-section">
-  <div class="leads-grid" id="leads-grid"></div>
-</div>
+  <!-- Toolbar: tabs + export -->
+  <div class="toolbar">
+    <div style="display:flex; flex-direction:column; gap:8px; flex:1;">
+      <!-- Status pipeline filter -->
+      <div class="status-filter" id="status-filter">
+        <button class="sf-btn active" data-status="all"       onclick="setStatusFilter('all')">All <span class="tab-count" id="sf-count-all">0</span></button>
+        <button class="sf-btn"        data-status="pending"   onclick="setStatusFilter('pending')">⏳ Pending <span class="tab-count" id="sf-count-pending">0</span></button>
+        <button class="sf-btn"        data-status="contacted" onclick="setStatusFilter('contacted')">📢 Contacted <span class="tab-count" id="sf-count-contacted">0</span></button>
+        <button class="sf-btn"        data-status="interested" onclick="setStatusFilter('interested')">💡 Interested <span class="tab-count" id="sf-count-interested">0</span></button>
+        <button class="sf-btn"        data-status="meeting"   onclick="setStatusFilter('meeting')">📅 Meeting <span class="tab-count" id="sf-count-meeting">0</span></button>
+        <button class="sf-btn"        data-status="closed"    onclick="setStatusFilter('closed')">✅ Closed <span class="tab-count" id="sf-count-closed">0</span></button>
+        <button class="sf-btn"        data-status="lost"      onclick="setStatusFilter('lost')">❌ Lost <span class="tab-count" id="sf-count-lost">0</span></button>
+      </div>
+      <!-- Category tabs -->
+      <div class="tabs" id="cat-tabs">
+        <div class="tab active" data-cat="all" onclick="switchTab('all')">
+          All <span class="tab-count" id="count-all">0</span>
+        </div>
+        <div class="tab" data-cat="restaurant" onclick="switchTab('restaurant')">
+          Restaurants <span class="tab-count" id="count-restaurant">0</span>
+        </div>
+        <div class="tab" data-cat="hotel" onclick="switchTab('hotel')">
+          Hotels <span class="tab-count" id="count-hotel">0</span>
+        </div>
+        <div class="tab" data-cat="casino" onclick="switchTab('casino')">
+          Casinos <span class="tab-count" id="count-casino">0</span>
+        </div>
+        <div class="tab" data-cat="catering" onclick="switchTab('catering')">
+          Catering <span class="tab-count" id="count-catering">0</span>
+        </div>
+        <div class="tab" data-cat="foodtruck" onclick="switchTab('foodtruck')">
+          Food Trucks <span class="tab-count" id="count-foodtruck">0</span>
+        </div>
+      </div>
+    </div>
+    <div class="export-bar">
+      <button class="btn-export week" id="btn-export-week" onclick="exportWeek()">
+        ⬇ Week Excel
+      </button>
+      <button class="btn-export all" onclick="exportAll()">⬇ All Excel</button>
+      <button class="btn-export csv" onclick="exportCsv()">⬇ CSV</button>
+    </div>
+  </div>
 
-<!-- History -->
-<div class="history-section" id="history-section" style="display:none;">
-  <div class="history-title">📅 Past Weeks</div>
-  <div id="history-list"></div>
-</div>
+  <!-- Lead cards -->
+  <div class="leads-section">
+    <div class="leads-grid" id="leads-grid"></div>
+  </div>
+
+  <!-- History -->
+  <div class="history-section" id="history-section" style="display:none;">
+    <div class="history-title">📅 Past Weeks</div>
+    <div id="history-list"></div>
+  </div>
+
+</div><!-- /sec-leads -->
+
+<!-- ═══════════════════════ DASHBOARD SECTION (Fase 4) ═══════════════════════ -->
+<div class="main-section" id="sec-dashboard">
+  <div class="dashboard-section">
+    <h2 style="font-size:18px;font-weight:800;margin-bottom:16px;">📊 Dashboard</h2>
+
+    <!-- KPI tiles -->
+    <div class="dash-kpis" id="dash-kpis">
+      <div class="kpi-tile"><div class="kpi-value" id="kpi-total">—</div><div class="kpi-label">Total Leads</div></div>
+      <div class="kpi-tile"><div class="kpi-value" id="kpi-closed">—</div><div class="kpi-label">Closed</div></div>
+      <div class="kpi-tile"><div class="kpi-value" id="kpi-conv">—</div><div class="kpi-label">Conversion %</div></div>
+      <div class="kpi-tile"><div class="kpi-value" id="kpi-meeting">—</div><div class="kpi-label">In Meeting</div></div>
+      <div class="kpi-tile"><div class="kpi-value" id="kpi-interested">—</div><div class="kpi-label">Interested</div></div>
+      <div class="kpi-tile"><div class="kpi-value" id="kpi-stale">—</div><div class="kpi-label">Stale (&gt;7d)</div></div>
+    </div>
+
+    <!-- Charts row -->
+    <div class="dash-row">
+      <div class="dash-card">
+        <div class="dash-card-title">Pipeline by Category</div>
+        <div class="dash-chart-wrap">
+          <canvas id="chart-category"></canvas>
+        </div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-title">Status Distribution</div>
+        <div class="dash-chart-wrap">
+          <canvas id="chart-status"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-card" style="margin-bottom:20px;">
+      <div class="dash-card-title">Weekly Lead Generation (Last 12 Weeks)</div>
+      <div class="dash-chart-wrap" style="height:200px;">
+        <canvas id="chart-evolution"></canvas>
+      </div>
+    </div>
+  </div>
+</div><!-- /sec-dashboard -->
+
+<!-- ═══════════════════════ MAP SECTION (Fase 5) ═══════════════════════ -->
+<div class="main-section" id="sec-map">
+  <div class="map-section">
+    <div class="map-header">
+      <h2>🗺️ Australia Lead Map</h2>
+      <span style="font-size:13px;color:var(--muted);" id="map-count">Loading...</span>
+    </div>
+    <div id="leads-map"></div>
+    <div class="map-legend">
+      <span><span class="legend-dot" style="background:#d97706;"></span>Pending</span>
+      <span><span class="legend-dot" style="background:#2563eb;"></span>Contacted</span>
+      <span><span class="legend-dot" style="background:#7c3aed;"></span>Interested</span>
+      <span><span class="legend-dot" style="background:#0891b2;"></span>Meeting</span>
+      <span><span class="legend-dot" style="background:#16a34a;"></span>Closed</span>
+      <span><span class="legend-dot" style="background:#6b7280;"></span>Lost</span>
+    </div>
+  </div>
+</div><!-- /sec-map -->
 
 <script>
-// ── State ─────────────────────────────────────────────────────────────────────
-let allLeads         = [];
-let allWeeks         = [];
-let activeTab        = 'all';
+// ── State ────────────────────────────────────────────────────────────────────
+let allLeads          = [];
+let allWeeks          = [];
+let activeTab         = 'all';
 let activeStatusFilter = 'all';
-let searchQuery      = '';
-let currentWeekId    = null;
+let currentWeekId     = null;
+let leafletMap        = null;
+let chartCategory     = null;
+let chartStatus       = null;
+let chartEvolution    = null;
+let staleLeadIds      = new Set();
 
-const STATUS_INFO = {
-  pending:    { label: '⏳ Pending',    color: '#6b7280' },
-  contacted:  { label: '📤 Contacted',  color: '#e85d04' },
-  interested: { label: '💡 Interested', color: '#2563eb' },
-  meeting:    { label: '📅 Meeting',    color: '#7c3aed' },
-  closed:     { label: '✅ Closed',     color: '#16a34a' },
-  lost:       { label: '❌ Lost',       color: '#dc2626' },
+const STATUS_LABELS = {
+  pending:   '⏳ Pending',
+  contacted: '📢 Contacted',
+  interested:'💡 Interested',
+  meeting:   '📅 Meeting',
+  closed:    '✅ Closed',
+  lost:      '❌ Lost',
 };
 
-// ── Init ──────────────────────────────────────────────────────────────────────
+const STATUS_COLORS = {
+  pending:   '#d97706',
+  contacted: '#2563eb',
+  interested:'#7c3aed',
+  meeting:   '#0891b2',
+  closed:    '#16a34a',
+  lost:      '#6b7280',
+};
+
+// ── Main section switcher ─────────────────────────────────────────────────────
+function switchSection(sec) {
+  document.querySelectorAll('.main-section').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.main-nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.sec === sec));
+  document.getElementById('sec-' + sec).classList.add('active');
+  if (sec === 'dashboard') loadDashboard();
+  if (sec === 'map') loadMap();
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
 async function init() {
   await Promise.all([loadStats(), loadLeads(), loadWeeks()]);
 }
@@ -545,18 +822,35 @@ async function loadStats() {
   if (!s) return;
   document.getElementById('stat-total').textContent     = s.total;
   document.getElementById('stat-pending').textContent   = s.pending;
-  document.getElementById('stat-contacted').textContent = s.contacted || 0;
-  document.getElementById('stat-interested').textContent= s.interested || 0;
-  document.getElementById('stat-meeting').textContent   = s.meeting || 0;
-  document.getElementById('stat-closed').textContent    = s.closed || 0;
+  document.getElementById('stat-contacted').textContent = s.contacted;
+  document.getElementById('stat-interested').textContent= s.interested;
+  document.getElementById('stat-meeting').textContent   = s.meeting;
+  document.getElementById('stat-closed').textContent    = s.closed;
   document.getElementById('stat-email').textContent     = s.with_email;
+  const stale = s.stale || 0;
+  document.getElementById('stat-stale').textContent = stale;
+  if (stale > 0) {
+    document.getElementById('stale-count-banner').textContent = stale;
+    document.getElementById('stale-banner').classList.add('show');
+  } else {
+    document.getElementById('stale-banner').classList.remove('show');
+  }
+  document.getElementById('kpi-total').textContent     = s.total;
+  document.getElementById('kpi-closed').textContent    = s.closed;
+  document.getElementById('kpi-meeting').textContent   = s.meeting;
+  document.getElementById('kpi-interested').textContent= s.interested;
+  document.getElementById('kpi-stale').textContent     = stale;
+  const conv = s.total > 0 ? Math.round((s.closed / s.total) * 100) : 0;
+  document.getElementById('kpi-conv').textContent = conv + '%';
 }
 
 async function loadLeads() {
   const leads = await fetchJSON('/api/leads');
   if (!leads) return;
   allLeads = leads;
-  updateCounts();
+  const stale = await fetchJSON('/api/leads/stale');
+  if (stale) staleLeadIds = new Set(stale.map(l => l.id));
+  updateTabCounts();
   renderLeads();
 }
 
@@ -568,7 +862,14 @@ async function loadWeeks() {
   renderHistory();
 }
 
-// ── Generate ──────────────────────────────────────────────────────────────────
+// ── Stale leads ───────────────────────────────────────────────────────────────
+function showStaleLeads() {
+  setStatusFilter('pending');
+  window.scrollTo({top: 0, behavior: 'smooth'});
+  showToast('⚠️ Showing leads — check stale ones', '');
+}
+
+// ── Generate ─────────────────────────────────────────────────────────────────
 async function generateLeads() {
   const btn  = document.getElementById('btn-generate');
   const stat = document.getElementById('gen-status');
@@ -599,6 +900,7 @@ async function generateLeads() {
       showToast(msg, 'success');
       stat.textContent = msg;
       currentWeekId = data.week_id;
+      allLeads = [...data.leads, ...allLeads];
       await Promise.all([loadStats(), loadLeads(), loadWeeks()]);
       document.getElementById('leads-grid').scrollIntoView({behavior:'smooth', block:'start'});
     }
@@ -611,137 +913,111 @@ async function generateLeads() {
   }
 }
 
-// ── Filters ───────────────────────────────────────────────────────────────────
+// ── Render leads ──────────────────────────────────────────────────────────────
 function setStatusFilter(status) {
   activeStatusFilter = status;
-  document.querySelectorAll('.pf-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.s === status)
-  );
+  document.querySelectorAll('.sf-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.status === status);
+  });
+  document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
+  const scMap = {all:'sc-total', pending:'sc-pending', contacted:'sc-contacted',
+                 interested:'sc-interested', meeting:'sc-meeting', closed:'sc-closed'};
+  if (scMap[status]) document.getElementById(scMap[status])?.classList.add('active-filter');
   renderLeads();
 }
 
-function switchTab(cat) {
-  activeTab = cat;
-  document.querySelectorAll('.tab').forEach(t =>
-    t.classList.toggle('active', t.dataset.cat === cat)
-  );
-  renderLeads();
-}
-
-function onSearch(val) {
-  searchQuery = val.trim().toLowerCase();
-  document.getElementById('search-clear').classList.toggle('visible', searchQuery.length > 0);
-  renderLeads();
-}
-
-function clearSearch() {
-  document.getElementById('search-input').value = '';
-  onSearch('');
-}
-
-function matchesSearch(lead) {
-  if (!searchQuery) return true;
-  return (lead.name    || '').toLowerCase().includes(searchQuery)
-      || (lead.email   || '').toLowerCase().includes(searchQuery)
-      || (lead.suburb  || '').toLowerCase().includes(searchQuery)
-      || (lead.phone   || '').toLowerCase().includes(searchQuery)
-      || (lead.address || '').toLowerCase().includes(searchQuery);
+function updateTabCounts() {
+  const visible = applyFilters(allLeads);
+  const counts  = { all: visible.length };
+  for (const lead of visible) {
+    const cat = lead.category || 'other';
+    counts[cat] = (counts[cat] || 0) + 1;
+  }
+  for (const [cat, elId] of Object.entries({
+    all: 'count-all', restaurant: 'count-restaurant',
+    hotel: 'count-hotel', casino: 'count-casino',
+    catering: 'count-catering', foodtruck: 'count-foodtruck',
+  })) {
+    const el = document.getElementById(elId);
+    if (el) el.textContent = counts[cat] || 0;
+  }
+  const statusCounts = {};
+  for (const l of allLeads) {
+    const s = l.status || 'pending';
+    statusCounts[s] = (statusCounts[s] || 0) + 1;
+  }
+  statusCounts['all'] = allLeads.length;
+  for (const [s, elId] of Object.entries({
+    all:'sf-count-all', pending:'sf-count-pending', contacted:'sf-count-contacted',
+    interested:'sf-count-interested', meeting:'sf-count-meeting',
+    closed:'sf-count-closed', lost:'sf-count-lost',
+  })) {
+    const el = document.getElementById(elId);
+    if (el) el.textContent = statusCounts[s] || 0;
+  }
 }
 
 function applyFilters(leads) {
   return leads.filter(l => {
     const catOk    = activeTab === 'all' || l.category === activeTab;
-    const statusOk = activeStatusFilter === 'all'
-                  || (l.status || 'pending') === activeStatusFilter;
-    return catOk && statusOk && matchesSearch(l);
+    const statusOk = activeStatusFilter === 'all' || (l.status || 'pending') === activeStatusFilter;
+    return catOk && statusOk;
   });
 }
 
-function updateCounts() {
-  const visible = applyFilters(allLeads);
-  const catCounts = { all: visible.length };
-  for (const lead of visible) {
-    const c = lead.category || 'other';
-    catCounts[c] = (catCounts[c] || 0) + 1;
-  }
-  for (const [c, id] of Object.entries({
-    all:'count-all', restaurant:'count-restaurant', hotel:'count-hotel',
-    casino:'count-casino', catering:'count-catering', foodtruck:'count-foodtruck',
-  })) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = catCounts[c] || 0;
-  }
-
-  const statCounts = {};
-  for (const lead of allLeads) {
-    const s = lead.status || 'pending';
-    statCounts[s] = (statCounts[s] || 0) + 1;
-  }
-  statCounts.all = allLeads.length;
-  for (const s of ['all','pending','contacted','interested','meeting','closed','lost']) {
-    const el = document.getElementById('pfc-' + s);
-    if (el) el.textContent = statCounts[s] || 0;
-  }
+function switchTab(cat) {
+  activeTab = cat;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
+  renderLeads();
 }
 
-// ── Render leads ──────────────────────────────────────────────────────────────
 function renderLeads() {
   const grid     = document.getElementById('leads-grid');
   const filtered = applyFilters(allLeads);
 
   if (filtered.length === 0) {
-    const isSearch = searchQuery.length > 0;
+    const statusLabel = STATUS_LABELS[activeStatusFilter] || activeStatusFilter;
     const emptyMsg = allLeads.length === 0
       ? { icon: '📋', title: 'No leads yet',
-          body: 'Click <strong>Generate Leads</strong> to get started. Claude AI will find Australian hospitality contacts.' }
-      : isSearch
-        ? { icon: '🔍', title: 'No results',
-            body: `No leads match "<strong>${esc(searchQuery)}</strong>". Try a different search.` }
-        : activeStatusFilter !== 'all'
-          ? { icon: STATUS_INFO[activeStatusFilter]?.label.split(' ')[0] || '📭',
-              title: `No ${activeStatusFilter} leads`,
-              body: 'No leads in this stage. Use the status selector on each card to move leads through the pipeline.' }
-          : { icon: '🔍', title: 'No results', body: 'Try another category or generate more leads.' };
+          body: 'Click <strong>Generate Leads</strong> above to start. Claude AI will find Australian hospitality businesses.' }
+      : activeStatusFilter !== 'all'
+        ? { icon: '🔍', title: `No leads in "${statusLabel}"`,
+            body: 'Try another status filter or generate more leads.' }
+        : { icon: '🔍', title: 'No results',
+            body: 'Try another category or generate more leads.' };
     grid.innerHTML = `
       <div class="empty-state" style="grid-column:1/-1">
         <div class="empty-icon">${emptyMsg.icon}</div>
         <h2>${emptyMsg.title}</h2>
         <p>${emptyMsg.body}</p>
       </div>`;
-    updateCounts();
     return;
   }
 
   const sorted = [...filtered].sort((a, b) => {
     const prioOrder = {high: 0, medium: 1, low: 2};
-    const statusOrder = {pending:0, contacted:1, interested:2, meeting:3, closed:4, lost:5};
     const pDiff = (prioOrder[a.priority] ?? 1) - (prioOrder[b.priority] ?? 1);
     if (pDiff !== 0) return pDiff;
-    return (statusOrder[a.status || 'pending'] ?? 0) - (statusOrder[b.status || 'pending'] ?? 0);
+    return (a.sent || 0) - (b.sent || 0);
   });
 
   grid.innerHTML = sorted.map(lead => cardHTML(lead)).join('');
-
-  // Apply status colors to selects
-  sorted.forEach(lead => {
-    const sel = document.getElementById('status-sel-' + lead.id);
-    if (sel) colorStatusSelect(sel, lead.status || 'pending');
-  });
-
-  updateCounts();
+  updateTabCounts();
 }
 
 function cardHTML(lead) {
-  const cat    = lead.category || 'restaurant';
-  const prio   = lead.priority  || 'medium';
-  const status = lead.status    || 'pending';
-  const name   = esc(lead.name  || '');
-  const email  = esc(lead.email || '');
-  const phone  = esc(lead.phone || '');
-  const addr   = [lead.address, lead.suburb, lead.state].filter(Boolean).map(esc).join(', ');
-  const web    = esc(lead.website || '');
-  const reason = esc(lead.reason  || '');
-  const notes  = esc(lead.notes   || '');
+  const cat     = lead.category || 'restaurant';
+  const prio    = lead.priority  || 'medium';
+  const status  = lead.status    || 'pending';
+  const notes   = lead.notes     || '';
+  const product = lead.interest_product || '';
+  const name    = esc(lead.name  || '');
+  const email   = esc(lead.email || '');
+  const phone   = esc(lead.phone || '');
+  const addr    = [lead.address, lead.suburb, lead.state].filter(Boolean).map(esc).join(', ');
+  const web     = esc(lead.website || '');
+  const reason  = esc(lead.reason  || '');
+  const isStale = staleLeadIds.has(lead.id);
 
   const prioBadge = prio === 'high'
     ? `<span class="badge badge-high">★ HIGH</span>`
@@ -752,111 +1028,197 @@ function cardHTML(lead) {
   const catLabel = {restaurant:'Restaurant', hotel:'Hotel', casino:'Casino',
                     catering:'Catering', foodtruck:'Food Truck'}[cat] || cat;
 
-  const statusOptions = Object.entries(STATUS_INFO).map(([v, {label}]) =>
-    `<option value="${v}" ${status === v ? 'selected' : ''}>${label}</option>`
-  ).join('');
+  const statusOptions = ['pending','contacted','interested','meeting','closed','lost']
+    .map(s => `<option value="${s}"${s===status?' selected':''}>${STATUS_LABELS[s]}</option>`)
+    .join('');
 
-  const isClosedOrLost = status === 'closed' || status === 'lost';
+  const isActive = status !== 'closed' && status !== 'lost';
 
-  return `<div class="lead-card${isClosedOrLost ? ' is-closed' : ''}" id="card-${lead.id}">
+  return `<div class="lead-card ss-${status}${isStale ? ' stale-card' : ''}" id="card-${lead.id}">
     <div class="card-top">
       <div class="card-badges">
         ${prioBadge}
         <span class="badge badge-${cat}">${catLabel}</span>
       </div>
-      <select id="status-sel-${lead.id}" class="status-select"
-              onchange="updateStatus(${lead.id}, this.value)">
-        ${statusOptions}
-      </select>
+      ${isStale ? '<span class="stale-indicator">🕐 Stale</span>' : ''}
     </div>
     <div class="card-body">
-      <div class="biz-name">${name}</div>
+      <div class="biz-name${!isActive ? ' sent-name' : ''}">${name}</div>
       ${email ? `<div class="contact-row"><span class="ci">📧</span><a href="mailto:${email}">${email}</a></div>` : ''}
       ${phone ? `<div class="contact-row"><span class="ci">📞</span>${phone}</div>` : ''}
       ${addr  ? `<div class="contact-row"><span class="ci">📍</span>${addr}</div>` : ''}
       ${web   ? `<div class="contact-row"><span class="ci">🌐</span><a href="${web}" target="_blank" rel="noopener">${web.replace('https://','')}</a></div>` : ''}
       ${reason ? `<div class="reason-text">${reason}</div>` : ''}
-    </div>
-    <div class="notes-section">
-      <div class="notes-label">📝 Notes</div>
-      <textarea id="notes-${lead.id}" class="notes-input"
-                placeholder="Add notes, comments, follow-up info..."
-                onblur="saveNotes(${lead.id}, this.value)">${notes}</textarea>
+      <div class="interest-row">
+        <label>🎯 Product of Interest</label>
+        <input class="interest-input" id="product-${lead.id}" type="text"
+               placeholder="e.g. Commercial oven, bench, cold room..."
+               value="${esc(product)}"
+               onblur="saveProduct(${lead.id})">
+      </div>
+      <span class="notes-label">📝 Notes</span>
+      <textarea class="notes-field" id="notes-${lead.id}" placeholder="Add notes..."
+        onblur="saveNotes(${lead.id})">${esc(notes)}</textarea>
     </div>
     <div class="card-actions">
-      <span class="card-action-info">Week ${lead.week_id || '—'}</span>
-      <button class="btn-delete" onclick="deleteLead(${lead.id})" title="Delete">🗑 Delete</button>
+      <select class="status-select ss-${status}" id="status-${lead.id}"
+              onchange="updateStatus(${lead.id}, this.value)">
+        ${statusOptions}
+      </select>
+      <button class="btn-action btn-history" onclick="openHistoryModal(${lead.id}, '${name}')" title="Status history">📋</button>
+      ${email ? `<button class="btn-action btn-email" onclick="openEmailModal(${lead.id})" title="Email template">✉️</button>` : ''}
+      <button class="btn-action btn-delete" onclick="deleteLead(${lead.id})" title="Delete">🗑</button>
     </div>
   </div>`;
 }
 
 // ── Lead actions ──────────────────────────────────────────────────────────────
-function colorStatusSelect(el, status) {
-  const colors = {
-    pending: '#6b7280', contacted: '#e85d04', interested: '#2563eb',
-    meeting: '#7c3aed', closed: '#16a34a', lost: '#dc2626',
-  };
-  el.style.borderColor = colors[status] || '#e0e0e0';
-  el.style.color       = colors[status] || '#6b7280';
-}
-
 async function updateStatus(id, status) {
-  const lead = allLeads.find(l => l.id === id);
-  if (!lead) return;
+  const notesEl   = document.getElementById(`notes-${id}`);
+  const productEl = document.getElementById(`product-${id}`);
+  const notes     = notesEl   ? notesEl.value   : undefined;
+  const product   = productEl ? productEl.value : undefined;
+  const body = {status};
+  if (notes   !== undefined) body.notes           = notes;
+  if (product !== undefined) body.interest_product = product;
 
-  // Save any unsaved notes before potentially re-rendering
-  const notesEl = document.getElementById('notes-' + id);
-  if (notesEl && notesEl.value !== (lead.notes || '')) {
-    lead.notes = notesEl.value;
-    fetch(`/api/leads/${id}/notes`, {
-      method: 'PUT', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({notes: notesEl.value}),
-    });
-  }
-
-  lead.status = status;
   await fetch(`/api/leads/${id}/status`, {
-    method: 'PUT', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({status}),
+    method: 'PUT',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body),
   });
-
-  const sel = document.getElementById('status-sel-' + id);
-  if (sel) colorStatusSelect(sel, status);
-
-  const card = document.getElementById('card-' + id);
+  const lead = allLeads.find(l => l.id === id);
+  if (lead) {
+    lead.status = status;
+    lead.sent   = status === 'pending' ? 0 : 1;
+    if (notes   !== undefined) lead.notes           = notes;
+    if (product !== undefined) lead.interest_product = product;
+  }
+  const card = document.getElementById(`card-${id}`);
   if (card) {
-    const isClosedOrLost = status === 'closed' || status === 'lost';
-    card.classList.toggle('is-closed', isClosedOrLost);
+    card.className = card.className.replace(/\bss-\S+/, `ss-${status}`);
+    const sel = document.getElementById(`status-${id}`);
+    if (sel) sel.className = sel.className.replace(/\bss-\S+/, `ss-${status}`);
   }
-
-  updateCounts();
+  staleLeadIds.delete(id);
   await loadStats();
-  showToast(STATUS_INFO[status]?.label || status, 'success');
-
-  if (activeStatusFilter !== 'all' && status !== activeStatusFilter) {
-    renderLeads();
-  }
+  updateTabCounts();
+  showToast(`✓ Status → ${STATUS_LABELS[status]}`, 'success');
 }
 
-async function saveNotes(id, notes) {
-  const lead = allLeads.find(l => l.id === id);
-  if (!lead) return;
-  if ((lead.notes || '') === notes) return;
-  lead.notes = notes;
-  await fetch(`/api/leads/${id}/notes`, {
-    method: 'PUT', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({notes}),
+async function saveNotes(id) {
+  const notesEl = document.getElementById(`notes-${id}`);
+  if (!notesEl) return;
+  const notes  = notesEl.value;
+  const lead   = allLeads.find(l => l.id === id);
+  const status = (lead && lead.status) || 'pending';
+  await fetch(`/api/leads/${id}/status`, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({status, notes}),
   });
+  if (lead) lead.notes = notes;
+  showToast('📝 Notes saved', 'success');
+}
+
+async function saveProduct(id) {
+  const el = document.getElementById(`product-${id}`);
+  if (!el) return;
+  const interest_product = el.value;
+  const lead   = allLeads.find(l => l.id === id);
+  const status = (lead && lead.status) || 'pending';
+  await fetch(`/api/leads/${id}/status`, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({status, interest_product}),
+  });
+  if (lead) lead.interest_product = interest_product;
+  showToast('🎯 Product saved', 'success');
 }
 
 async function deleteLead(id) {
-  if (!confirm('Delete this lead? This cannot be undone.')) return;
+  if (!confirm('Delete this lead?')) return;
   await fetch(`/api/leads/${id}`, {method: 'DELETE'});
   allLeads = allLeads.filter(l => l.id !== id);
-  updateCounts();
+  staleLeadIds.delete(id);
+  updateTabCounts();
   renderLeads();
   await loadStats();
   showToast('🗑 Lead deleted', '');
+}
+
+// ── Status history modal (Fase 2) ─────────────────────────────────────────────
+async function openHistoryModal(id, name) {
+  document.getElementById('history-modal-title').textContent = `📋 History — ${name}`;
+  document.getElementById('history-timeline').innerHTML = '<li style="color:var(--muted);font-size:13px;padding:12px 0;">Loading...</li>';
+  document.getElementById('history-modal').classList.add('show');
+
+  const data = await fetchJSON(`/api/leads/${id}/history`);
+  const tl   = document.getElementById('history-timeline');
+
+  if (!data || data.length === 0) {
+    tl.innerHTML = '<li style="color:var(--muted);font-size:13px;padding:12px 0;">No status changes recorded yet.</li>';
+    return;
+  }
+
+  tl.innerHTML = data.map(h => {
+    const arrow = h.old_status
+      ? `${STATUS_LABELS[h.old_status] || h.old_status} → ${STATUS_LABELS[h.new_status] || h.new_status}`
+      : `Created as ${STATUS_LABELS[h.new_status] || h.new_status}`;
+    const dateStr = h.changed_at ? new Date(h.changed_at).toLocaleString('en-AU') : '—';
+    return `<li class="history-item">
+      <div class="history-dot" style="background:${STATUS_COLORS[h.new_status] || '#e85d04'};"></div>
+      <div class="history-info">
+        <div class="history-status">${arrow}</div>
+        <div class="history-time">${dateStr}</div>
+        ${h.notes ? `<div class="history-notes">${esc(h.notes)}</div>` : ''}
+      </div>
+    </li>`;
+  }).join('');
+}
+
+function closeHistoryModal() {
+  document.getElementById('history-modal').classList.remove('show');
+}
+
+// ── Email template modal (Fase 3) ─────────────────────────────────────────────
+async function openEmailModal(id) {
+  document.getElementById('email-subject').textContent = 'Loading...';
+  document.getElementById('email-body').textContent    = '';
+  document.getElementById('btn-copy-email').textContent = '📋 Copy to Clipboard';
+  document.getElementById('btn-copy-email').classList.remove('copied');
+  document.getElementById('email-modal').classList.add('show');
+
+  const data = await fetchJSON(`/api/leads/${id}/email-template`);
+  if (!data) {
+    document.getElementById('email-subject').textContent = 'Error loading template';
+    return;
+  }
+  document.getElementById('email-subject').textContent = 'Subject: ' + (data.subject || '');
+  document.getElementById('email-body').textContent    = data.body || '';
+}
+
+function closeEmailModal() {
+  document.getElementById('email-modal').classList.remove('show');
+}
+
+async function copyEmail() {
+  const subject = document.getElementById('email-subject').textContent.replace('Subject: ', '');
+  const body    = document.getElementById('email-body').textContent;
+  const full    = `Subject: ${subject}\n\n${body}`;
+  try {
+    await navigator.clipboard.writeText(full);
+    const btn = document.getElementById('btn-copy-email');
+    btn.textContent = '✅ Copied!';
+    btn.classList.add('copied');
+    showToast('📋 Email copied to clipboard', 'success');
+    setTimeout(() => {
+      btn.textContent = '📋 Copy to Clipboard';
+      btn.classList.remove('copied');
+    }, 2500);
+  } catch(e) {
+    showToast('❌ Could not copy — please select manually', 'error');
+  }
 }
 
 // ── Export ────────────────────────────────────────────────────────────────────
@@ -876,7 +1238,7 @@ function exportCsv() {
   showToast('⬇ Downloading CSV...', 'success');
 }
 
-// ── History ───────────────────────────────────────────────────────────────────
+// ── History (weeks) ───────────────────────────────────────────────────────────
 function renderHistory() {
   const section = document.getElementById('history-section');
   const list    = document.getElementById('history-list');
@@ -884,27 +1246,25 @@ function renderHistory() {
   section.style.display = 'block';
 
   list.innerHTML = allWeeks.map((wk, idx) => {
-    const leads = allLeads.filter(l => l.week_id === wk.id);
-    const rows  = leads.slice(0, 30).map(l => {
-      const s = l.status || 'pending';
-      return `<div class="mini-lead-row">
+    const leads   = allLeads.filter(l => l.week_id === wk.id);
+    const isFirst = idx === 0;
+    const rows    = leads.slice(0, 30).map(l => `
+      <div class="mini-lead-row">
         <span class="mini-name">${esc(l.name)}</span>
         <span class="mini-email">${esc(l.email || '—')}</span>
         <span class="mini-cat"><span class="badge badge-${l.category}">${l.category}</span></span>
-        <span class="mini-status" style="color:${STATUS_INFO[s]?.color || '#6b7280'};font-size:11px;font-weight:700;">
-          ${STATUS_INFO[s]?.label || s}
-        </span>
-      </div>`;
-    }).join('');
+        <span class="mini-prio"><span class="badge badge-${l.priority}">${l.priority}</span></span>
+      </div>`).join('');
     return `
-      <details class="week-block" ${idx === 0 ? 'open' : ''}>
+      <details class="week-block" ${isFirst ? 'open' : ''}>
         <summary>
           <span>${wk.week_label}</span>
           <div class="week-meta">
             <span class="week-pill">${wk.total_leads || 0} leads</span>
-            <span class="week-pill good">${wk.sent_leads || 0} contacted</span>
-            <button class="btn-export week" style="font-size:11px;padding:4px 10px;"
-              onclick="event.preventDefault(); window.location.href='/api/export/week/${wk.id}'">⬇ Excel</button>
+            <span class="week-pill good">${wk.sent_leads || 0} sent</span>
+            <div class="week-actions">
+              <button class="btn-export week" onclick="event.preventDefault(); window.location.href='/api/export/week/${wk.id}'">⬇ Excel</button>
+            </div>
           </div>
         </summary>
         <div class="week-detail-body">${rows || '<p style="color:var(--muted);font-size:13px;padding:8px 0">No leads this week</p>'}</div>
@@ -922,6 +1282,179 @@ document.getElementById('panel-toggle').addEventListener('click', () => {
   header.classList.toggle('open', open);
 });
 
+document.getElementById('history-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeHistoryModal();
+});
+document.getElementById('email-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeEmailModal();
+});
+
+// ── DASHBOARD (Fase 4) ────────────────────────────────────────────────────────
+async function loadDashboard() {
+  const statusCounts = {};
+  for (const l of allLeads) {
+    const s = l.status || 'pending';
+    statusCounts[s] = (statusCounts[s] || 0) + 1;
+  }
+  const statusLabels = ['pending','contacted','interested','meeting','closed','lost'];
+  const statusData   = statusLabels.map(s => statusCounts[s] || 0);
+  const statusColors = statusLabels.map(s => STATUS_COLORS[s]);
+
+  if (chartStatus) chartStatus.destroy();
+  chartStatus = new Chart(document.getElementById('chart-status'), {
+    type: 'doughnut',
+    data: {
+      labels: statusLabels.map(s => STATUS_LABELS[s]),
+      datasets: [{ data: statusData, backgroundColor: statusColors, borderWidth: 2 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { font: { size: 12 } } } },
+    },
+  });
+
+  const catData = await fetchJSON('/api/dashboard/categories');
+  if (catData) {
+    const cats    = [...new Set(catData.map(d => d.category))];
+    const statuses = ['pending','contacted','interested','meeting','closed','lost'];
+    const datasets = statuses.map(s => ({
+      label: STATUS_LABELS[s],
+      data: cats.map(c => {
+        const row = catData.find(d => d.category === c && d.status === s);
+        return row ? row.count : 0;
+      }),
+      backgroundColor: STATUS_COLORS[s],
+      borderRadius: 4,
+    }));
+    if (chartCategory) chartCategory.destroy();
+    chartCategory = new Chart(document.getElementById('chart-category'), {
+      type: 'bar',
+      data: { labels: cats, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { font: { size: 11 } } } },
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } },
+        },
+      },
+    });
+  }
+
+  const evoData = await fetchJSON('/api/dashboard/evolution');
+  if (evoData) {
+    if (chartEvolution) chartEvolution.destroy();
+    chartEvolution = new Chart(document.getElementById('chart-evolution'), {
+      type: 'line',
+      data: {
+        labels: evoData.map(d => d.week_label),
+        datasets: [{
+          label: 'Leads generated',
+          data: evoData.map(d => d.count),
+          borderColor: '#e85d04',
+          backgroundColor: 'rgba(232,93,4,.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.3,
+          pointBackgroundColor: '#e85d04',
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 5 } },
+        },
+      },
+    });
+  }
+}
+
+// ── MAP (Fase 5) ──────────────────────────────────────────────────────────────
+const CITY_COORDS = {
+  'Melbourne CBD':[-37.814,144.963],'Southbank':[-37.822,144.966],'Docklands':[-37.814,144.951],
+  'South Yarra':[-37.839,144.993],'St Kilda':[-37.867,144.980],'Richmond':[-37.826,144.996],
+  'Fitzroy':[-37.800,144.979],'Collingwood':[-37.804,144.986],'Carlton':[-37.800,144.969],
+  'Brunswick':[-37.767,144.961],'Northcote':[-37.770,144.998],'Footscray':[-37.800,144.901],
+  'Box Hill':[-37.820,145.123],'Dandenong':[-37.987,145.215],'Frankston':[-38.145,145.126],
+  'Geelong':[-38.149,144.361],'Ballarat':[-37.562,143.859],'Bendigo':[-36.758,144.282],
+  'Sydney CBD':[-33.869,151.209],'Surry Hills':[-33.886,151.211],'Newtown':[-33.898,151.179],
+  'Parramatta':[-33.815,151.003],'Bondi':[-33.891,151.274],'Manly':[-33.797,151.286],
+  'Newcastle':[-32.927,151.776],'Wollongong':[-34.424,150.893],'Byron Bay':[-28.643,153.615],
+  'Brisbane CBD':[-27.470,153.026],'Fortitude Valley':[-27.455,153.034],
+  'Gold Coast':[-28.017,153.400],'Surfers Paradise':[-28.003,153.431],
+  'Cairns':[-16.924,145.779],'Townsville':[-19.258,146.818],
+  'Perth CBD':[-31.953,115.857],'Fremantle':[-32.057,115.747],'Subiaco':[-31.948,115.826],
+  'Northbridge':[-31.945,115.856],'Joondalup':[-31.745,115.766],
+  'Adelaide CBD':[-34.929,138.601],'Glenelg':[-34.980,138.516],'North Adelaide':[-34.906,138.597],
+  'Hobart CBD':[-42.882,147.328],'Sandy Bay':[-42.897,147.336],'Launceston':[-41.439,147.137],
+  'Canberra CBD':[-35.282,149.129],'Civic':[-35.278,149.130],
+};
+
+function getSuburbCoords(lead) {
+  const suburb = lead.suburb || '';
+  const state  = lead.state  || '';
+  if (CITY_COORDS[suburb]) return CITY_COORDS[suburb];
+  for (const [key, coords] of Object.entries(CITY_COORDS)) {
+    if (suburb && key.toLowerCase().includes(suburb.toLowerCase().split(' ')[0])) return coords;
+  }
+  const capitals = {
+    'VIC':[-37.814,144.963],'NSW':[-33.869,151.209],'QLD':[-27.470,153.026],
+    'WA':[-31.953,115.857],'SA':[-34.929,138.601],'TAS':[-42.882,147.328],'ACT':[-35.282,149.129],
+  };
+  const abbr = state.length <= 3 ? state.toUpperCase() : null;
+  if (abbr && capitals[abbr]) return capitals[abbr];
+  if (state.includes('Victoria'))  return capitals['VIC'];
+  if (state.includes('New South')) return capitals['NSW'];
+  if (state.includes('Queensland'))return capitals['QLD'];
+  if (state.includes('Western'))   return capitals['WA'];
+  if (state.includes('South Aus')) return capitals['SA'];
+  if (state.includes('Tasmania'))  return capitals['TAS'];
+  if (state.includes('Capital'))   return capitals['ACT'];
+  return null;
+}
+
+function loadMap() {
+  if (!leafletMap) {
+    leafletMap = L.map('leads-map').setView([-27, 134], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 18,
+    }).addTo(leafletMap);
+  } else {
+    leafletMap.eachLayer(layer => { if (layer instanceof L.Marker) leafletMap.removeLayer(layer); });
+  }
+
+  let placed = 0;
+  for (const lead of allLeads) {
+    const coords = getSuburbCoords(lead);
+    if (!coords) continue;
+    const lat = coords[0] + (Math.random() - 0.5) * 0.03;
+    const lng = coords[1] + (Math.random() - 0.5) * 0.03;
+    const status = lead.status || 'pending';
+    const color  = STATUS_COLORS[status] || '#e85d04';
+
+    const marker = L.circleMarker([lat, lng], {
+      radius: lead.priority === 'high' ? 9 : lead.priority === 'medium' ? 7 : 5,
+      fillColor: color, color: '#fff',
+      weight: 2, opacity: 1, fillOpacity: 0.85,
+    });
+
+    marker.bindPopup(`
+      <strong>${esc(lead.name || '')}</strong><br>
+      <span style="color:${color};font-weight:700;">${STATUS_LABELS[status]}</span><br>
+      ${lead.suburb ? lead.suburb + ', ' : ''}${lead.state || ''}<br>
+      ${lead.email ? `📧 ${esc(lead.email)}<br>` : ''}
+      ${lead.phone ? `📞 ${esc(lead.phone)}<br>` : ''}
+      <em style="color:#666;font-size:11px;">${(lead.category||'').toUpperCase()} · ${(lead.priority||'').toUpperCase()}</em>
+    `);
+    marker.addTo(leafletMap);
+    placed++;
+  }
+
+  document.getElementById('map-count').textContent = `${placed} leads mapped`;
+}
+
 // ── Utilities ─────────────────────────────────────────────────────────────────
 async function fetchJSON(url) {
   try {
@@ -932,8 +1465,10 @@ async function fetchJSON(url) {
 
 function esc(str) {
   return String(str)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 let toastTimer;
@@ -942,14 +1477,14 @@ function showToast(msg, type) {
   el.textContent = msg;
   el.className   = 'show ' + (type || '');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.className = ''; }, 3200);
+  toastTimer = setTimeout(() => { el.className = ''; }, 3500);
 }
 
 function showOverlay(show) {
   document.getElementById('loading-overlay').classList.toggle('show', show);
 }
 
-// ── City data ─────────────────────────────────────────────────────────────────
+// ── City data by state ────────────────────────────────────────────────────────
 const CITIES = {
   'Victoria': [
     'Melbourne CBD','Southbank','Docklands','South Yarra','St Kilda',
@@ -958,7 +1493,7 @@ const CITIES = {
     'Dandenong','Frankston','Hawthorn','Prahran','Windsor',
     'Toorak','Brighton','Camberwell','Caulfield','Port Melbourne',
     'Albert Park','South Melbourne','Geelong','Ballarat','Bendigo',
-    'Shepparton','Warrnambool','Mildura','Heidelberg',
+    'Shepparton','Albury-Wodonga','Warrnambool','Mildura','Heidelberg',
   ],
   'New South Wales': [
     'Sydney CBD','Surry Hills','Newtown','Glebe','Pyrmont',
@@ -966,35 +1501,41 @@ const CITIES = {
     'Parramatta','Bondi','Bondi Junction','Manly','Chatswood',
     'North Sydney','Randwick','Liverpool','Penrith','Wollongong',
     'Newcastle','Coffs Harbour','Albury','Wagga Wagga','Orange',
-    'Dubbo','Byron Bay','Leichhardt','Marrickville','Bankstown',
+    'Dubbo','Byron Bay','Tweed Heads','Leichhardt','Marrickville',
+    'Strathfield','Hurstville','Kogarah','Rockdale','Bankstown',
   ],
   'Queensland': [
     'Brisbane CBD','South Brisbane','Fortitude Valley','New Farm',
-    'West End','Spring Hill','Toowong','Paddington','Indooroopilly',
-    'Mount Gravatt','Chermside','Gold Coast','Surfers Paradise',
-    'Broadbeach','Burleigh Heads','Noosa','Sunshine Coast',
-    'Cairns','Townsville','Toowoomba','Rockhampton','Ipswich',
+    'West End','Spring Hill','Kangaroo Point','Toowong','Paddington',
+    'Indooroopilly','Mount Gravatt','Chermside','Carindale',
+    'Gold Coast','Surfers Paradise','Broadbeach','Burleigh Heads',
+    'Noosa','Sunshine Coast','Cairns','Townsville','Toowoomba',
+    'Rockhampton','Mackay','Ipswich','Redcliffe','Logan Central',
+    'Bundaberg','Hervey Bay','Gladstone',
   ],
   'Western Australia': [
     'Perth CBD','Fremantle','Subiaco','Leederville','Mount Lawley',
-    'Northbridge','East Perth','Cottesloe','Scarborough',
+    'Northbridge','East Perth','West Perth','Cottesloe','Scarborough',
     'Joondalup','Rockingham','Mandurah','Bunbury','Broome',
     'Geraldton','Albany','Kalgoorlie','Morley','Cannington',
+    'Canning Vale','Balcatta','Osborne Park','Claremont','Nedlands',
   ],
   'South Australia': [
     'Adelaide CBD','Glenelg','North Adelaide','Norwood','Unley',
-    'Burnside','Prospect','Port Adelaide','Hindley Street',
-    'Semaphore','Victor Harbor','Mount Gambier','Whyalla',
-    'Murray Bridge','Port Augusta','Gawler','Salisbury',
+    'Burnside','Prospect','Hindmarsh','Port Adelaide','Hindley Street',
+    'Rundle Mall','Semaphore','Victor Harbor','Mount Gambier',
+    'Whyalla','Murray Bridge','Port Augusta','Gawler','Salisbury',
+    'Elizabeth','Modbury','Marion','Noarlunga',
   ],
   'Tasmania': [
     'Hobart CBD','Sandy Bay','North Hobart','Salamanca','Battery Point',
     'Launceston','Devonport','Burnie','Kingston','Glenorchy',
+    'Sorell','Richmond','Huonville',
   ],
   'Australian Capital Territory': [
     'Canberra CBD','Civic','Braddon','Manuka','Kingston',
     'Barton','Griffith','Deakin','Woden','Belconnen',
-    'Tuggeranong','Gungahlin',
+    'Tuggeranong','Gungahlin','Fyshwick',
   ],
 };
 
