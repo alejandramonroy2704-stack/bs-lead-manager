@@ -58,6 +58,7 @@ def init_db():
                 week_label TEXT NOT NULL,
                 created_at TEXT NOT NULL
             )""")
+        conn.commit()
         cur.execute("""
             CREATE TABLE IF NOT EXISTS leads (
                 id               SERIAL PRIMARY KEY,
@@ -80,6 +81,7 @@ def init_db():
                 created_at       TEXT NOT NULL,
                 FOREIGN KEY (week_id) REFERENCES weeks(id)
             )""")
+        conn.commit()
         cur.execute("""
             CREATE TABLE IF NOT EXISTS status_history (
                 id         SERIAL PRIMARY KEY,
@@ -90,14 +92,18 @@ def init_db():
                 changed_at TEXT NOT NULL,
                 FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
             )""")
+        conn.commit()
         for col, definition in [
             ("status",           "TEXT NOT NULL DEFAULT 'pending'"),
             ("notes",            "TEXT DEFAULT ''"),
             ("interest_product", "TEXT DEFAULT ''"),
             ("status_updated_at","TEXT"),
         ]:
-            try: cur.execute(f"ALTER TABLE leads ADD COLUMN {col} {definition}")
-            except Exception: pass
+            try:
+                cur.execute(f"ALTER TABLE leads ADD COLUMN {col} {definition}")
+                conn.commit()
+            except Exception:
+                conn.rollback()
     else:
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS weeks (
