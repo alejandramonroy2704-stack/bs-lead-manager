@@ -88,16 +88,16 @@
   }
   .stat-card:hover { transform: translateY(-2px); }
   .stat-card.active-filter { box-shadow: 0 0 0 2px var(--orange); }
-  .stat-card.sc-pending    { border-color: var(--amber); }
-  .stat-card.sc-pending.active-filter { box-shadow: 0 0 0 2px var(--amber); }
-  .stat-card.sc-contacted  { border-color: var(--blue); }
-  .stat-card.sc-contacted.active-filter { box-shadow: 0 0 0 2px var(--blue); }
-  .stat-card.sc-interested { border-color: var(--purple); }
-  .stat-card.sc-interested.active-filter { box-shadow: 0 0 0 2px var(--purple); }
-  .stat-card.sc-meeting    { border-color: #0891b2; }
-  .stat-card.sc-meeting.active-filter { box-shadow: 0 0 0 2px #0891b2; }
-  .stat-card.sc-closed     { border-color: var(--green); }
-  .stat-card.sc-closed.active-filter { box-shadow: 0 0 0 2px var(--green); }
+  .stat-card.sc-pending    { border-color: #f59e0b; }
+  .stat-card.sc-pending.active-filter { box-shadow: 0 0 0 2px #f59e0b; }
+  .stat-card.sc-contacted  { border-color: #3b82f6; }
+  .stat-card.sc-contacted.active-filter { box-shadow: 0 0 0 2px #3b82f6; }
+  .stat-card.sc-interested { border-color: #8b5cf6; }
+  .stat-card.sc-interested.active-filter { box-shadow: 0 0 0 2px #8b5cf6; }
+  .stat-card.sc-meeting    { border-color: #06b6d4; }
+  .stat-card.sc-meeting.active-filter { box-shadow: 0 0 0 2px #06b6d4; }
+  .stat-card.sc-closed     { border-color: #22c55e; }
+  .stat-card.sc-closed.active-filter { box-shadow: 0 0 0 2px #22c55e; }
   .stat-card.sc-email      { border-color: #9ca3af; }
   .stat-card.sc-stale      { border-color: var(--amber); cursor: pointer; }
   .stat-card.sc-stale:hover { transform: translateY(-2px); }
@@ -196,10 +196,18 @@
     background: var(--card); border-radius: var(--radius);
     box-shadow: var(--shadow); overflow: hidden;
     transition: transform .15s, box-shadow .15s;
-    border: 1.5px solid var(--border);
+    border: 2px solid var(--border);
+    border-top-width: 4px;
   }
   .lead-card:hover { transform: translateY(-3px); box-shadow: 0 6px 24px rgba(0,0,0,.1); }
   .lead-card.stale-card { border-color: #fbbf24; }
+  /* Card top-border by status */
+  .lead-card.ss-pending    { border-top-color: #f59e0b; }
+  .lead-card.ss-contacted  { border-top-color: #3b82f6; }
+  .lead-card.ss-interested { border-top-color: #8b5cf6; }
+  .lead-card.ss-meeting    { border-top-color: #06b6d4; }
+  .lead-card.ss-closed     { border-top-color: #22c55e; }
+  .lead-card.ss-lost       { border-top-color: #ef4444; }
 
   /* ── Card photo strip ── */
   .card-photo-wrap { position: relative; overflow: hidden; }
@@ -316,12 +324,12 @@
     background-repeat: no-repeat; background-position: right 8px center;
     flex: 1;
   }
-  .ss-pending    { border-color: var(--amber);  color: #92400e; background-color: #fffbeb; }
-  .ss-contacted  { border-color: var(--blue);   color: #1e40af; background-color: #eff6ff; }
-  .ss-interested { border-color: var(--purple); color: #5b21b6; background-color: #f5f3ff; }
-  .ss-meeting    { border-color: #0891b2;        color: #164e63; background-color: #ecfeff; }
-  .ss-closed     { border-color: var(--green);  color: #14532d; background-color: #f0fdf4; }
-  .ss-lost       { border-color: #9ca3af;        color: #374151; background-color: #f9fafb; }
+  .ss-pending    { border-color: #f59e0b; color: #78350f; background-color: #fef3c7; font-weight:800; }
+  .ss-contacted  { border-color: #3b82f6; color: #1e3a8a; background-color: #dbeafe; font-weight:800; }
+  .ss-interested { border-color: #8b5cf6; color: #3b0764; background-color: #ede9fe; font-weight:800; }
+  .ss-meeting    { border-color: #06b6d4; color: #083344; background-color: #cffafe; font-weight:800; }
+  .ss-closed     { border-color: #22c55e; color: #14532d; background-color: #dcfce7; font-weight:800; }
+  .ss-lost       { border-color: #ef4444; color: #7f1d1d; background-color: #fee2e2; font-weight:800; }
 
   /* ── Status filter pills ── */
   .status-filter { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -333,12 +341,12 @@
   .sf-btn:hover { border-color: var(--orange); color: var(--orange); }
   .sf-btn.active { color: #fff; border-color: transparent; }
   .sf-btn[data-status="all"].active       { background: #111; }
-  .sf-btn[data-status="pending"].active   { background: var(--amber); }
-  .sf-btn[data-status="contacted"].active { background: var(--blue); }
-  .sf-btn[data-status="interested"].active{ background: var(--purple); }
-  .sf-btn[data-status="meeting"].active   { background: #0891b2; }
-  .sf-btn[data-status="closed"].active    { background: var(--green); }
-  .sf-btn[data-status="lost"].active      { background: #6b7280; }
+  .sf-btn[data-status="pending"].active   { background: #f59e0b; }
+  .sf-btn[data-status="contacted"].active { background: #3b82f6; }
+  .sf-btn[data-status="interested"].active{ background: #8b5cf6; }
+  .sf-btn[data-status="meeting"].active   { background: #06b6d4; }
+  .sf-btn[data-status="closed"].active    { background: #22c55e; }
+  .sf-btn[data-status="lost"].active      { background: #ef4444; }
 
   /* ── Empty state ── */
   .empty-state {
@@ -820,12 +828,12 @@ const STATUS_LABELS = {
 };
 
 const STATUS_COLORS = {
-  pending:   '#d97706',
-  contacted: '#2563eb',
-  interested:'#7c3aed',
-  meeting:   '#0891b2',
-  closed:    '#16a34a',
-  lost:      '#6b7280',
+  pending:   '#f59e0b',
+  contacted: '#3b82f6',
+  interested:'#8b5cf6',
+  meeting:   '#06b6d4',
+  closed:    '#22c55e',
+  lost:      '#ef4444',
 };
 
 // ── Main section switcher ─────────────────────────────────────────────────────
