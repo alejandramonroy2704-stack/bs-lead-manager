@@ -61,7 +61,7 @@ def login():
             session["username"]  = username
             return redirect(url_for("index"))
         else:
-            error = "Usuario o contraseña incorrectos"
+            error = "Incorrect username or password"
     return render_template("login.html", error=error)
 
 @app.route("/logout")
