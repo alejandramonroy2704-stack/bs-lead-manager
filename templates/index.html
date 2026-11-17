@@ -211,8 +211,13 @@
     position: absolute; top: 10px; left: 10px; right: 10px;
     display: flex; justify-content: space-between; align-items: flex-start;
   }
+  .photo-cat-badge.cat-restaurant { background: rgba(194,65,12,.85); }
+  .photo-cat-badge.cat-hotel      { background: rgba(29,78,216,.85); }
+  .photo-cat-badge.cat-casino     { background: rgba(109,40,217,.85); }
+  .photo-cat-badge.cat-catering   { background: rgba(21,128,61,.85); }
+  .photo-cat-badge.cat-foodtruck  { background: rgba(180,83,9,.85); }
   .photo-cat-badge {
-    background: rgba(0,0,0,.55); color: #fff;
+    color: #fff;
     font-size: 11px; font-weight: 700; padding: 4px 10px;
     border-radius: 20px; backdrop-filter: blur(4px);
   }
@@ -1071,7 +1076,7 @@ function cardHTML(lead) {
     <div class="card-photo-wrap">
       <img class="card-photo" src="${photoUrl}" alt="${catLabel}" loading="lazy">
       <div class="card-photo-badges">
-        <span class="photo-cat-badge">${catLabel}</span>
+        <span class="photo-cat-badge cat-${cat}">${catLabel}</span>
         ${isStale ? '<span class="photo-stale-badge">🕐 Stale</span>' : prioBadge}
       </div>
     </div>
