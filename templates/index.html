@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BS Weekly Lead Manager</title>
-<!-- Chart.js for dashboard (Fase 4) -->
+<!-- Chart.js for dashboard -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<!-- Leaflet for map (Fase 5) -->
+<!-- Leaflet for map -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -200,6 +200,26 @@
   }
   .lead-card:hover { transform: translateY(-3px); box-shadow: 0 6px 24px rgba(0,0,0,.1); }
   .lead-card.stale-card { border-color: #fbbf24; }
+
+  /* ── Card photo strip ── */
+  .card-photo-wrap { position: relative; overflow: hidden; }
+  .card-photo {
+    width: 100%; height: 150px; object-fit: cover; display: block;
+    background: #e5e7eb;
+  }
+  .card-photo-badges {
+    position: absolute; top: 10px; left: 10px; right: 10px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
+  .photo-cat-badge {
+    background: rgba(0,0,0,.55); color: #fff;
+    font-size: 11px; font-weight: 700; padding: 4px 10px;
+    border-radius: 20px; backdrop-filter: blur(4px);
+  }
+  .photo-stale-badge {
+    font-size: 11px; font-weight: 700; color: #92400e;
+    background: rgba(254,243,199,.9); padding: 4px 8px; border-radius: 10px;
+  }
 
   .card-top {
     padding: 14px 16px 10px;
@@ -547,7 +567,7 @@
     <span style="color:#9ca3af; font-size:13px;">B+S Commercial Kitchens &nbsp;•&nbsp; Australia</span>
     <a href="/logout" style="color:#9ca3af; font-size:13px; text-decoration:none;
        border:1px solid #444; padding:5px 12px; border-radius:6px;">
-      🔓 Salir
+      🔓 Log out
     </a>
   </div>
 </header>
@@ -829,12 +849,14 @@ async function loadStats() {
   document.getElementById('stat-email').textContent     = s.with_email;
   const stale = s.stale || 0;
   document.getElementById('stat-stale').textContent = stale;
+  // Show stale banner
   if (stale > 0) {
     document.getElementById('stale-count-banner').textContent = stale;
     document.getElementById('stale-banner').classList.add('show');
   } else {
     document.getElementById('stale-banner').classList.remove('show');
   }
+  // Update dashboard KPIs if visible
   document.getElementById('kpi-total').textContent     = s.total;
   document.getElementById('kpi-closed').textContent    = s.closed;
   document.getElementById('kpi-meeting').textContent   = s.meeting;
@@ -848,6 +870,7 @@ async function loadLeads() {
   const leads = await fetchJSON('/api/leads');
   if (!leads) return;
   allLeads = leads;
+  // Fetch stale leads
   const stale = await fetchJSON('/api/leads/stale');
   if (stale) staleLeadIds = new Set(stale.map(l => l.id));
   updateTabCounts();
@@ -1005,6 +1028,15 @@ function renderLeads() {
   updateTabCounts();
 }
 
+// ── Category photos (Unsplash — one per category) ────────────────────────────
+const CAT_PHOTOS = {
+  restaurant: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&q=75&fit=crop',
+  hotel:      'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=75&fit=crop',
+  casino:     'https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=600&q=75&fit=crop',
+  catering:   'https://images.unsplash.com/photo-1555244162-803834f70033?w=600&q=75&fit=crop',
+  foodtruck:  'https://images.unsplash.com/photo-1565123409695-7b5ef63a2efb?w=600&q=75&fit=crop',
+};
+
 function cardHTML(lead) {
   const cat     = lead.category || 'restaurant';
   const prio    = lead.priority  || 'medium';
@@ -1033,14 +1065,15 @@ function cardHTML(lead) {
     .join('');
 
   const isActive = status !== 'closed' && status !== 'lost';
+  const photoUrl = CAT_PHOTOS[cat] || CAT_PHOTOS.restaurant;
 
   return `<div class="lead-card ss-${status}${isStale ? ' stale-card' : ''}" id="card-${lead.id}">
-    <div class="card-top">
-      <div class="card-badges">
-        ${prioBadge}
-        <span class="badge badge-${cat}">${catLabel}</span>
+    <div class="card-photo-wrap">
+      <img class="card-photo" src="${photoUrl}" alt="${catLabel}" loading="lazy">
+      <div class="card-photo-badges">
+        <span class="photo-cat-badge">${catLabel}</span>
+        ${isStale ? '<span class="photo-stale-badge">🕐 Stale</span>' : prioBadge}
       </div>
-      ${isStale ? '<span class="stale-indicator">🕐 Stale</span>' : ''}
     </div>
     <div class="card-body">
       <div class="biz-name${!isActive ? ' sent-name' : ''}">${name}</div>
@@ -1094,6 +1127,7 @@ async function updateStatus(id, status) {
     if (notes   !== undefined) lead.notes           = notes;
     if (product !== undefined) lead.interest_product = product;
   }
+  // Update card border class live without full re-render
   const card = document.getElementById(`card-${id}`);
   if (card) {
     card.className = card.className.replace(/\bss-\S+/, `ss-${status}`);
@@ -1282,6 +1316,7 @@ document.getElementById('panel-toggle').addEventListener('click', () => {
   header.classList.toggle('open', open);
 });
 
+// Close modals on overlay click
 document.getElementById('history-modal').addEventListener('click', function(e) {
   if (e.target === this) closeHistoryModal();
 });
@@ -1291,6 +1326,7 @@ document.getElementById('email-modal').addEventListener('click', function(e) {
 
 // ── DASHBOARD (Fase 4) ────────────────────────────────────────────────────────
 async function loadDashboard() {
+  // Status chart from local data
   const statusCounts = {};
   for (const l of allLeads) {
     const s = l.status || 'pending';
@@ -1313,6 +1349,7 @@ async function loadDashboard() {
     },
   });
 
+  // Category pipeline chart
   const catData = await fetchJSON('/api/dashboard/categories');
   if (catData) {
     const cats    = [...new Set(catData.map(d => d.category))];
@@ -1341,6 +1378,7 @@ async function loadDashboard() {
     });
   }
 
+  // Weekly evolution chart
   const evoData = await fetchJSON('/api/dashboard/evolution');
   if (evoData) {
     if (chartEvolution) chartEvolution.destroy();
@@ -1371,39 +1409,51 @@ async function loadDashboard() {
 }
 
 // ── MAP (Fase 5) ──────────────────────────────────────────────────────────────
+// City → approximate [lat, lng] lookup table for Australian cities
 const CITY_COORDS = {
+  // Victoria
   'Melbourne CBD':[-37.814,144.963],'Southbank':[-37.822,144.966],'Docklands':[-37.814,144.951],
   'South Yarra':[-37.839,144.993],'St Kilda':[-37.867,144.980],'Richmond':[-37.826,144.996],
   'Fitzroy':[-37.800,144.979],'Collingwood':[-37.804,144.986],'Carlton':[-37.800,144.969],
   'Brunswick':[-37.767,144.961],'Northcote':[-37.770,144.998],'Footscray':[-37.800,144.901],
   'Box Hill':[-37.820,145.123],'Dandenong':[-37.987,145.215],'Frankston':[-38.145,145.126],
   'Geelong':[-38.149,144.361],'Ballarat':[-37.562,143.859],'Bendigo':[-36.758,144.282],
+  // NSW
   'Sydney CBD':[-33.869,151.209],'Surry Hills':[-33.886,151.211],'Newtown':[-33.898,151.179],
   'Parramatta':[-33.815,151.003],'Bondi':[-33.891,151.274],'Manly':[-33.797,151.286],
   'Newcastle':[-32.927,151.776],'Wollongong':[-34.424,150.893],'Byron Bay':[-28.643,153.615],
+  // Queensland
   'Brisbane CBD':[-27.470,153.026],'Fortitude Valley':[-27.455,153.034],
   'Gold Coast':[-28.017,153.400],'Surfers Paradise':[-28.003,153.431],
   'Cairns':[-16.924,145.779],'Townsville':[-19.258,146.818],
+  // WA
   'Perth CBD':[-31.953,115.857],'Fremantle':[-32.057,115.747],'Subiaco':[-31.948,115.826],
   'Northbridge':[-31.945,115.856],'Joondalup':[-31.745,115.766],
+  // SA
   'Adelaide CBD':[-34.929,138.601],'Glenelg':[-34.980,138.516],'North Adelaide':[-34.906,138.597],
+  // Tasmania
   'Hobart CBD':[-42.882,147.328],'Sandy Bay':[-42.897,147.336],'Launceston':[-41.439,147.137],
+  // ACT
   'Canberra CBD':[-35.282,149.129],'Civic':[-35.278,149.130],
 };
 
 function getSuburbCoords(lead) {
   const suburb = lead.suburb || '';
   const state  = lead.state  || '';
+  // Try exact suburb
   if (CITY_COORDS[suburb]) return CITY_COORDS[suburb];
+  // Try partial match
   for (const [key, coords] of Object.entries(CITY_COORDS)) {
     if (suburb && key.toLowerCase().includes(suburb.toLowerCase().split(' ')[0])) return coords;
   }
+  // Fall back to state capitals
   const capitals = {
     'VIC':[-37.814,144.963],'NSW':[-33.869,151.209],'QLD':[-27.470,153.026],
     'WA':[-31.953,115.857],'SA':[-34.929,138.601],'TAS':[-42.882,147.328],'ACT':[-35.282,149.129],
   };
   const abbr = state.length <= 3 ? state.toUpperCase() : null;
   if (abbr && capitals[abbr]) return capitals[abbr];
+  // Try state name match
   if (state.includes('Victoria'))  return capitals['VIC'];
   if (state.includes('New South')) return capitals['NSW'];
   if (state.includes('Queensland'))return capitals['QLD'];
@@ -1422,6 +1472,7 @@ function loadMap() {
       maxZoom: 18,
     }).addTo(leafletMap);
   } else {
+    // Clear existing markers
     leafletMap.eachLayer(layer => { if (layer instanceof L.Marker) leafletMap.removeLayer(layer); });
   }
 
@@ -1429,6 +1480,7 @@ function loadMap() {
   for (const lead of allLeads) {
     const coords = getSuburbCoords(lead);
     if (!coords) continue;
+    // Jitter slightly so stacked markers are visible
     const lat = coords[0] + (Math.random() - 0.5) * 0.03;
     const lng = coords[1] + (Math.random() - 0.5) * 0.03;
     const status = lead.status || 'pending';
