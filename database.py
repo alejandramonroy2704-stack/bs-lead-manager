@@ -6,7 +6,10 @@ import sqlite3
 from datetime import datetime, timedelta
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
-USE_PG = bool(DATABASE_URL and DATABASE_URL.startswith("postgres"))
+# Render uses postgres:// but psycopg2 requires postgresql://
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+USE_PG = bool(DATABASE_URL and DATABASE_URL.startswith("postgresql"))
 
 if USE_PG:
     import psycopg2
