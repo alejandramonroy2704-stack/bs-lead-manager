@@ -882,7 +882,21 @@ async function loadStats() {
 async function loadLeads() {
   const leads = await fetchJSON('/api/leads');
   if (!leads) return;
-  allLeads = leads;
+  // Normalise state names (handles abbreviations or inconsistent casing from old data)
+  const STATE_NORM = {
+    'vic':'Victoria','victoria':'Victoria',
+    'nsw':'New South Wales','new south wales':'New South Wales',
+    'qld':'Queensland','queensland':'Queensland',
+    'wa':'Western Australia','western australia':'Western Australia',
+    'sa':'South Australia','south australia':'South Australia',
+    'tas':'Tasmania','tasmania':'Tasmania',
+    'act':'Australian Capital Territory','australian capital territory':'Australian Capital Territory',
+    'nt':'Northern Territory','northern territory':'Northern Territory',
+  };
+  allLeads = leads.map(l => ({
+    ...l,
+    state: STATE_NORM[(l.state||'').trim().toLowerCase()] || (l.state||'').trim() || 'Unknown',
+  }));
   // Fetch stale leads
   const stale = await fetchJSON('/api/leads/stale');
   if (stale) staleLeadIds = new Set(stale.map(l => l.id));
@@ -1030,14 +1044,50 @@ function renderLeads() {
     return;
   }
 
+  // Sort within each state: priority → suburb → id
+  const prioOrder = {high: 0, medium: 1, low: 2};
   const sorted = [...filtered].sort((a, b) => {
-    const prioOrder = {high: 0, medium: 1, low: 2};
+    const stateA = (a.state || '').trim();
+    const stateB = (b.state || '').trim();
+    if (stateA < stateB) return -1;
+    if (stateA > stateB) return  1;
+    const subA = (a.suburb || '').trim().toLowerCase();
+    const subB = (b.suburb || '').trim().toLowerCase();
+    if (subA < subB) return -1;
+    if (subA > subB) return  1;
     const pDiff = (prioOrder[a.priority] ?? 1) - (prioOrder[b.priority] ?? 1);
     if (pDiff !== 0) return pDiff;
-    return (a.sent || 0) - (b.sent || 0);
+    return a.id - b.id;
   });
 
-  grid.innerHTML = sorted.map(lead => cardHTML(lead)).join('');
+  // Group by state and render with headers
+  const groups = {};
+  const groupOrder = [];
+  for (const lead of sorted) {
+    const st = (lead.state || 'Unknown').trim();
+    if (!groups[st]) { groups[st] = []; groupOrder.push(st); }
+    groups[st].push(lead);
+  }
+
+  let html = '';
+  for (const state of groupOrder) {
+    const leads = groups[state];
+    html += `
+      <div class="state-group-header" style="
+        grid-column: 1 / -1;
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 4px 4px;
+        border-bottom: 2px solid var(--border);
+        margin-top: 8px;
+      ">
+        <span style="font-size:18px;">📍</span>
+        <span style="font-weight:800; font-size:15px; color:var(--text);">${state}</span>
+        <span style="font-size:12px; color:var(--muted); background:var(--border); border-radius:20px; padding:2px 10px;">${leads.length} lead${leads.length !== 1 ? 's' : ''}</span>
+      </div>
+      ${leads.map(lead => cardHTML(lead)).join('')}
+    `;
+  }
+  grid.innerHTML = html;
   updateTabCounts();
 }
 
